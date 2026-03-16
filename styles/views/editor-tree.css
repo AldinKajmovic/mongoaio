@@ -1,0 +1,54 @@
+/* =============================================
+   Editor — Tree Context Menu
+   ============================================= */
+.tree-context-menu {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  min-width: 180px;
+  background: rgba(25, 25, 30, 0.98);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  backdrop-filter: blur(12px);
+}
+
+.tree-context-menu.visible {
+  display: block;
+  animation: fadeIn 0.1s ease;
+}
+
+.tree-ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.tree-ctx-item:hover:not([disabled]) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.tree-ctx-item[disabled] {
+  color: var(--text-muted);
+  cursor: default;
+  opacity: 0.5;
+}
+
+.tree-ctx-separator {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 8px;
+}

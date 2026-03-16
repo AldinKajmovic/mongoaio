@@ -1,0 +1,39 @@
+{
+  "name": "mongoaio",
+  "version": "1.0.0",
+  "description": "MongoDB editor with compare & sync feature",
+  "main": "main.js",
+  "scripts": {
+    "start": "node start.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "build:win": "electron-builder --win --x64",
+    "build:linux": "electron-builder --linux deb AppImage"
+  },
+  "dependencies": {
+    "mongodb": "^6.3.0"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.mongoAIO.app",
+    "productName": "MongoAIO",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "deb",
+        "AppImage"
+      ],
+      "category": "Development"
+    }
+  }
+}

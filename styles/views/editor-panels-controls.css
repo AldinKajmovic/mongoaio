@@ -1,0 +1,129 @@
+/* =============================================
+   Editor — Status Bar, Resize Handles, Table Cell Copy
+   ============================================= */
+
+/* Status Bar */
+.editor-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px;
+  background: rgba(15, 15, 20, 0.95);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.editor-status-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.editor-status-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Panel Resize Handles (sidebar / query panel) */
+.editor-resize-handle {
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  z-index: 50;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.editor-resize-handle:hover,
+.editor-resize-handle.active {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+.editor-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  right: -3px;
+}
+
+/* Column Resize Handles (tree header & table th) */
+.col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  z-index: 15;
+}
+
+.col-resize-handle:hover,
+.col-resize-handle.active {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+.col-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  right: -3px;
+}
+
+.editor-data-col {
+  position: relative;
+}
+
+.editor-table-th {
+  position: relative;
+}
+
+/* Table Cell Copy Button */
+.table-cell-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+}
+
+.cell-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-copy-cell {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.editor-table-td:hover .btn-copy-cell {
+  opacity: 1;
+}
+
+.btn-copy-cell:hover {
+  color: #60a5fa;
+}
+
+.btn-copy-cell svg {
+  width: 12px;
+  height: 12px;
+}

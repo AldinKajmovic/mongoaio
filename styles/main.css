@@ -1,0 +1,29 @@
+/* CompareDB — Modular CSS Aggregator */
+
+/* Foundation */
+@import url('./variables.css');
+@import url('./base.css');
+
+/* Components */
+@import url('./components/buttons.css');
+@import url('./components/forms.css');
+@import url('./components/cards.css');
+@import url('./components/navigation.css');
+@import url('./components/modals.css');
+@import url('./components/modals-collection.css');
+@import url('./components/toasts.css');
+
+/* Views */
+@import url('./views/connection.css');
+@import url('./views/comparison.css');
+@import url('./views/documents.css');
+@import url('./views/documents-diff.css');
+@import url('./views/editor.css');
+@import url('./views/editor-main.css');
+@import url('./views/editor-query.css');
+@import url('./views/editor-data.css');
+@import url('./views/editor-data-views.css');
+@import url('./views/editor-panels-controls.css');
+@import url('./views/editor-panels-query.css');
+@import url('./views/editor-tree.css');
+@import url('./views/editor-shell.css');

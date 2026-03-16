@@ -1,0 +1,130 @@
+/* =============================================
+   Editor — JSON View, Table View, Doc Actions
+   ============================================= */
+
+/* JSON View */
+.editor-json-doc-item {
+  position: relative;
+  transition: background var(--transition-fast);
+}
+
+.editor-json-doc-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.doc-actions-overlay {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  z-index: 5;
+}
+
+.editor-json-doc-item:hover .doc-actions-overlay {
+  opacity: 1;
+}
+
+.btn-delete-doc {
+  color: var(--text-muted);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn-delete-doc:hover {
+  color: var(--status-danger);
+  transform: scale(1.1);
+}
+
+.editor-json-view {
+  margin: 0;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Table View */
+.editor-table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.editor-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.editor-table-th {
+  padding: 8px 12px;
+  background: rgba(20, 20, 25, 0.9);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.editor-table-row {
+  transition: background var(--transition-fast);
+}
+
+.editor-table-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.editor-table-td {
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-table-td-num {
+  color: var(--text-muted);
+  font-weight: 600;
+  width: 40px;
+}
+
+.editor-table-th-num {
+  width: 40px;
+}
+
+.editor-table-td-num .btn-delete-doc {
+  margin-left: -4px;
+}
+
+.editor-table-row:hover .btn-delete-doc {
+  opacity: 1 !important;
+}
+
+.editor-doc-header .btn-delete-doc {
+  opacity: 0;
+}
+
+.editor-doc-header:hover .btn-delete-doc {
+  opacity: 1;
+}
+
+.editor-doc-children {
+  display: none;
+}
+
+.editor-doc-row.expanded .editor-doc-children {
+  display: block;
+}

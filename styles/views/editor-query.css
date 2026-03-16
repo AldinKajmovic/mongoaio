@@ -1,0 +1,223 @@
+/* =============================================
+   Editor — Query Bar, Result Tabs, Pagination, Search
+   ============================================= */
+.editor-query-bar {
+  padding: 8px 12px;
+  background: rgba(18, 18, 22, 0.7);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editor-query-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-query-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 65px;
+  text-align: right;
+}
+
+.editor-query-input {
+  flex: 1;
+  padding: 5px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+}
+
+.editor-query-input:focus {
+  border-color: var(--accent-purple);
+}
+
+.editor-query-input-sm {
+  max-width: 120px;
+}
+
+.editor-result-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 12px;
+  background: rgba(18, 18, 22, 0.7);
+  border-bottom: 1px solid var(--border);
+}
+
+.editor-result-tab {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.editor-result-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.editor-result-tab.active {
+  color: #60a5fa;
+  border-bottom-color: #60a5fa;
+}
+
+.editor-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: rgba(18, 18, 22, 0.7);
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+
+/* Inline Search Bar */
+.editor-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(18, 18, 22, 0.9);
+  border-bottom: 1px solid var(--border);
+}
+
+.editor-search-bar-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.editor-search-bar-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  padding: 5px 10px;
+  outline: none;
+}
+
+.editor-search-bar-input:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.editor-search-bar-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.editor-search-bar-close {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+/* Search highlights */
+.search-highlight {
+  background: rgba(255, 213, 0, 0.3);
+  color: inherit;
+  border-radius: 2px;
+}
+
+.search-highlight-active {
+  background: rgba(255, 165, 0, 0.7);
+  color: #000;
+  border-radius: 2px;
+  outline: 1px solid rgba(255, 165, 0, 0.9);
+}
+
+.editor-pagination-left,
+.editor-pagination-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-page-size-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 2px 4px;
+  outline: none;
+}
+
+.editor-pagination-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* View Mode Dropdown */
+.editor-view-dropdown {
+  position: relative;
+}
+
+.editor-view-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 110px;
+}
+
+.editor-view-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 200;
+  min-width: 160px;
+  background: rgba(25, 25, 30, 0.98);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  animation: fadeIn 0.1s ease;
+}
+
+.editor-view-dropdown-menu.open {
+  display: block;
+}
+
+.editor-view-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.editor-view-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.editor-view-option.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}

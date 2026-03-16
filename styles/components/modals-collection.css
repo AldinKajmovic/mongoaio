@@ -1,0 +1,184 @@
+/* =============================================
+   Add Collection Modal
+   ============================================= */
+.add-coll-modal {
+  max-width: 600px;
+  max-height: 85vh;
+}
+
+.add-coll-context-bar {
+  padding: 8px 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.add-coll-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.add-coll-name-row label {
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.add-coll-name-row input {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+/* Tabs */
+.add-coll-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+
+.add-coll-tab {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 10px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.add-coll-tab:hover {
+  color: var(--text-primary);
+}
+
+.add-coll-tab.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+}
+
+/* Body & Panels */
+.add-coll-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 260px;
+  max-height: 50vh;
+}
+
+.add-coll-panel {
+  padding: 16px 20px;
+}
+
+.add-coll-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* Radio Options */
+.add-coll-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.add-coll-radio input[type="radio"] {
+  accent-color: var(--accent-cyan);
+}
+
+/* Conditional Sections */
+.add-coll-section {
+  padding: 4px 0 8px 24px;
+}
+
+/* Form Rows */
+.add-coll-form-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.add-coll-form-row label {
+  min-width: 180px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.add-coll-form-row input,
+.add-coll-form-row select {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.add-coll-form-row-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.add-coll-form-row-inline label {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Validator Header */
+.add-coll-validator-header {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+/* Select Styling */
+.add-coll-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+}
+
+.add-coll-select:focus {
+  border-color: var(--accent-purple);
+}
+
+/* Info Icon */
+.add-coll-input-with-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.add-coll-input-with-info input {
+  flex: 1;
+}
+
+.add-coll-info-icon {
+  color: var(--accent-cyan);
+  font-size: 16px;
+  cursor: help;
+}
+
+/* Editor wraps inside this modal */
+.add-coll-panel .insert-doc-editor-wrap {
+  margin: 0;
+  min-height: 220px;
+  flex: 1;
+}

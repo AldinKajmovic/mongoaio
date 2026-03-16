@@ -1,0 +1,175 @@
+/* =============================================
+   Editor — Data Panel, View Dropdown, Field Rows
+   ============================================= */
+
+/* Data Panel */
+.editor-data-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: rgba(12, 12, 16, 0.6);
+}
+
+/* View Dropdown */
+.editor-view-dropdown {
+  position: relative;
+}
+
+.editor-view-dropdown-btn {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  justify-content: space-between;
+}
+
+.editor-view-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: none;
+  flex-direction: column;
+  min-width: 150px;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.editor-view-dropdown-menu.show {
+  display: flex;
+}
+
+.editor-view-option {
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.editor-view-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.editor-view-option.active {
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.editor-data-header {
+  display: grid;
+  grid-template-columns: 1fr 200px 100px;
+  padding: 8px 16px;
+  background: rgba(20, 20, 25, 0.9);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.editor-data-col-type { text-align: right; }
+
+.editor-doc-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.editor-doc-header {
+  display: grid;
+  grid-template-columns: 1fr 200px 100px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background var(--transition-fast);
+  align-items: center;
+}
+
+.editor-doc-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.editor-doc-row.expanded > .editor-doc-header {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.editor-doc-row.expanded > .editor-doc-header .tree-arrow {
+  transform: rotate(90deg);
+}
+
+.editor-doc-key {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-doc-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.editor-doc-type {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.editor-field-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 200px 100px;
+  padding: 3px 16px 3px 28px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.015);
+  align-items: center;
+  transition: background var(--transition-fast);
+}
+
+.editor-field-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.editor-field-row.selected {
+  background: rgba(59, 130, 246, 0.4) !important;
+  color: white;
+}
+
+.editor-field-indent {
+  width: 16px;
+}
+
+.editor-field-key {
+  font-family: var(--font-mono);
+  color: var(--accent-amber);
+  font-weight: 500;
+}
+
+.editor-field-value {
+  font-family: var(--font-mono);
+  color: #60a5fa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.editor-field-type {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+}

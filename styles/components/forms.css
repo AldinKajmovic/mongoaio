@@ -1,0 +1,132 @@
+/* =============================================
+   Forms — Inputs, Selects, Labels
+   ============================================= */
+.input-group {
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.label-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.label-badge.source {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.label-badge.target {
+  background: rgba(6, 182, 212, 0.15);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+input[type="text"], textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+input[type="text"]:focus, textarea:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+input[type="text"]::placeholder {
+  color: var(--text-muted);
+}
+
+.saved-conn-select {
+  padding: 10px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.saved-conn-select:focus {
+  border-color: var(--accent-purple);
+}
+
+.input-with-select {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-with-select input[type="text"] {
+  flex: 1;
+}
+
+.search-input {
+  /* inherited from input[type="text"] */
+}
+
+.field-sync-checkbox {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--accent-purple);
+  border-radius: 3px;
+  background: rgba(59, 130, 246, 0.1);
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast);
+  margin: 0 auto;
+}
+
+.field-sync-checkbox:checked {
+  background: var(--accent-purple);
+}
+
+.field-sync-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 10px;
+}
+
+.field-sync-checkbox:hover {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.inline-edit-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--accent-purple);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 4px 8px;
+  outline: none;
+  resize: vertical;
+  min-height: 32px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

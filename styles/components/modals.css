@@ -1,0 +1,270 @@
+/* =============================================
+   Modal
+   ============================================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal {
+  width: 90%;
+  max-width: 640px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalIn 0.2s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-sm {
+  max-width: 420px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.json-editor {
+  width: 100%;
+  min-height: 300px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 14px;
+  resize: vertical;
+}
+
+.json-editor:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.modal-error {
+  color: var(--accent-red);
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.info-box {
+  background: rgba(6, 182, 212, 0.1);
+  border-left: 3px solid var(--accent-cyan);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+}
+
+.info-box p {
+  line-height: 1.5;
+}
+
+/* =============================================
+   Insert Document Modal
+   ============================================= */
+#insert-doc-overlay {
+  z-index: 1100;
+}
+
+.insert-doc-modal {
+  max-width: 720px;
+}
+
+.modal-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.insert-doc-close-btn {
+  color: #4fc3f7;
+  font-size: 18px;
+}
+
+.insert-doc-body {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.insert-doc-editor-wrap {
+  display: flex;
+  flex: 1;
+  min-height: 280px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  margin: 12px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.insert-doc-line-numbers {
+  padding: 10px 8px;
+  text-align: right;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  background: rgba(0, 0, 0, 0.2);
+  border-right: 1px solid var(--border);
+  user-select: none;
+  min-width: 36px;
+  white-space: pre;
+}
+
+.insert-doc-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+  overflow-wrap: normal;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.insert-doc-textarea.word-wrap {
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.insert-doc-footer {
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 12px;
+}
+
+.insert-doc-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.insert-doc-wordwrap-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.insert-doc-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.sync-field-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Sync Modal Styles */
+.sync-modal-header {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sync-modal-fields {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sync-modal-item {
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: all var(--transition-fast);
+}
+
+.sync-modal-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--accent-purple);
+}
+
+.sync-modal-item label {
+  display: grid;
+  grid-template-columns: 24px 120px 1fr;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  width: 100%;
+}
+
+.sync-modal-field-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent-amber);
+  word-break: break-all;
+}
+
+.sync-modal-preview {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================================
+   Add Database Modal
+   ============================================= */
+.add-db-modal {
+  max-width: 500px;
+}
+
+.add-db-confirm-btn {
+  min-width: 80px;
+}

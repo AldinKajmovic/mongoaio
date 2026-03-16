@@ -1,0 +1,277 @@
+/* =============================================
+   Editor — Query Panel & Query Builder
+   ============================================= */
+
+/* Right Query Panel */
+.editor-query-panel {
+  width: 260px;
+  min-width: 200px;
+  background: rgba(15, 15, 20, 0.95);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.editor-query-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.editor-query-panel-toggle {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--accent-purple);
+  border-radius: 3px;
+  background: rgba(59, 130, 246, 0.1);
+  cursor: pointer;
+  position: relative;
+}
+
+.editor-query-panel-toggle:checked {
+  background: var(--accent-purple);
+}
+
+.editor-query-panel-toggle:checked::after {
+  content: '\2713';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 10px;
+}
+
+.editor-query-panel-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.editor-query-panel-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.editor-query-panel-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.editor-query-panel-select {
+  width: 100%;
+  padding: 5px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+  margin-bottom: 8px;
+}
+
+.editor-query-panel-dropzone {
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.editor-query-panel-dropzone:hover,
+.editor-query-panel-dropzone.drag-over {
+  border-color: var(--accent-purple);
+  background: rgba(59, 130, 246, 0.05);
+  color: var(--text-secondary);
+}
+
+/* Query builder field tags */
+.editor-qb-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.editor-qb-block {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba(40, 40, 50, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  transition: all 0.2s ease;
+}
+
+.editor-qb-block.disabled {
+  opacity: 0.5;
+  filter: grayscale(0.5);
+}
+
+.editor-qb-where-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-top: 26px; /* Align with bottom row roughly */
+  min-width: 45px;
+}
+
+.editor-qb-block-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editor-qb-block-top, .editor-qb-block-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-qb-drag-handle {
+  color: var(--text-muted);
+  cursor: grab;
+  padding: 2px;
+}
+
+.editor-qb-op-select {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 8px;
+  outline: none;
+}
+
+.editor-qb-actions-row {
+  display: flex;
+  gap: 4px;
+}
+
+.editor-qb-btn-duplicate, .editor-qb-btn-remove, .editor-qb-btn-more {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.editor-qb-btn-duplicate:hover, .editor-qb-btn-more:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.editor-qb-btn-remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.editor-qb-type-selector-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0;
+  transition: border-color 0.2s;
+  overflow: hidden;
+}
+
+.editor-qb-type-selector-wrap:hover {
+  border-color: var(--accent-blue);
+}
+
+.editor-qb-type-select {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 11px;
+  padding: 4px 6px;
+  outline: none;
+  cursor: pointer;
+  appearance: none; /* Hide default arrow */
+  text-align: center;
+  min-width: 70px;
+}
+
+.editor-qb-value-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 10px;
+  outline: none;
+  font-family: var(--font-mono);
+}
+
+.editor-qb-value-input:focus {
+  border-color: var(--accent-purple);
+}
+
+.editor-qb-enabled-toggle {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--accent-blue);
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.editor-qb-enabled-toggle:checked {
+  background: var(--accent-blue);
+}
+
+.editor-qb-enabled-toggle:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 9px;
+}
+
+/* Query builder action buttons row */
+.editor-qb-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Draggable field row cursor hint */
+.editor-field-row[draggable] {
+  cursor: grab;
+}
+
+.editor-field-row[draggable]:active {
+  cursor: grabbing;
+}

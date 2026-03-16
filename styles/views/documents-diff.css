@@ -1,0 +1,66 @@
+/* Diff field state variants */
+.diff-field.different {
+  border-left: 2px solid var(--accent-amber);
+  padding-left: 6px;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.diff-field-sync-col {
+  display: flex;
+  align-items: center;
+}
+
+.diff-field-sync-spacer {
+  width: 16px;
+  display: inline-block;
+  margin: 0 auto;
+}
+
+.val-text.different {
+  color: var(--accent-amber);
+  font-weight: 600;
+}
+
+.diff-field.header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.diff-field.header .diff-field-name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.diff-field.header .diff-field-value.source {
+  font-weight: 700;
+  color: #60a5fa;
+  background: transparent;
+}
+
+.diff-field.header .diff-field-value.target {
+  font-weight: 700;
+  color: #22d3ee;
+  background: transparent;
+}
+
+.diff-field.unique {
+  grid-template-columns: 140px 1fr;
+}
+
+.diff-field-value-source-header {
+  font-weight: 700;
+  color: #60a5fa;
+  background: transparent;
+}
+
+.diff-field-value-target-header {
+  font-weight: 700;
+  color: #22d3ee;
+  background: transparent;
+}
+
+.diff-field-spacer {
+  width: 20px;
+  display: inline-block;
+}
