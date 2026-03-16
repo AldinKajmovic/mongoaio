@@ -145,3 +145,8 @@ vite.config.ts.timestamp-*
 
 # Connections file
 connections.json
+
+# Build output
+dist
+
+package-lock.json

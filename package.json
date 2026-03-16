@@ -2,6 +2,10 @@
   "name": "mongoaio",
   "version": "1.0.0",
   "description": "MongoDB editor with compare & sync feature",
+  "author": {
+    "name": "Aldin K",
+    "email": "kajmovicaldin@outlook.com"
+  },
   "main": "main.js",
   "scripts": {
     "start": "node start.js",
@@ -25,7 +29,8 @@
     },
     "win": {
       "target": [
-        "nsis"
+        "nsis",
+        "portable"
       ]
     },
     "linux": {
