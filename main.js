@@ -1,6 +1,7 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { registerIpcHandlers } = require('./ipc-handlers');
+const { initUpdater } = require('./src/main/updater');
 
 let mainWindow;
 
@@ -10,7 +11,7 @@ function createWindow() {
     height: 900,
     minWidth: 1000,
     minHeight: 700,
-    title: 'CompareDB',
+    title: 'MongoAIO',
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -23,6 +24,7 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
   registerIpcHandlers();
+  initUpdater(mainWindow);
 }
 
 app.whenReady().then(createWindow);

@@ -55,7 +55,7 @@ export async function runEditorQuery() {
  */
 export function renderEditorResults(result, skipSync = false) {
   currentRenderedItems = result.items;
-  state.editor.selectedField = null; // Clear field selection on new results
+
   if (!skipSync) {
     state.editor.total = result.total;
     state.editor.limit = result.limit;
@@ -107,6 +107,48 @@ export function openEditorEditModal(index) {
     runEditorQuery();
     return true;
   });
+}
+
+/**
+ * Clear all editor results and reset query inputs
+ */
+export function clearEditorResults() {
+  currentRenderedItems = [];
+  expandedDocs.clear();
+
+  // Clear query inputs
+  if (elements.editorQueryFilter) elements.editorQueryFilter.value = '{}';
+  if (elements.editorQuerySort) elements.editorQuerySort.value = '{}';
+  if (elements.editorQueryProjection) elements.editorQueryProjection.value = '{}';
+  if (elements.editorQueryLimit) elements.editorQueryLimit.value = '10';
+  if (elements.editorQuerySkip) elements.editorQuerySkip.value = '0';
+  if (elements.editorPageSizeSelect) elements.editorPageSizeSelect.value = '10';
+
+  // Clear data panels
+  const treeRows = document.getElementById('editor-tree-rows');
+  if (treeRows) treeRows.innerHTML = '';
+  const jsonPanel = document.getElementById('editor-data-json');
+  if (jsonPanel) { const pre = jsonPanel.querySelector('pre'); if (pre) pre.textContent = '[]'; }
+  const tableHead = document.getElementById('editor-table-head');
+  if (tableHead) tableHead.innerHTML = '<th class="editor-table-th">#</th>';
+  const tableBody = document.getElementById('editor-table-body');
+  if (tableBody) tableBody.innerHTML = '';
+
+  // Reset pagination
+  if (elements.editorPaginationInfo) elements.editorPaginationInfo.textContent = 'Documents 0 to 0';
+  if (elements.btnEditorPrev) elements.btnEditorPrev.disabled = true;
+  if (elements.btnEditorFirst) elements.btnEditorFirst.disabled = true;
+  if (elements.btnEditorNext) elements.btnEditorNext.disabled = true;
+  if (elements.btnEditorLast) elements.btnEditorLast.disabled = true;
+
+  // Reset status bar
+  const statusInfo = document.querySelector('.editor-status-info');
+  if (statusInfo) statusInfo.textContent = '0 items selected';
+  const timeEl = document.querySelector('.editor-status-time');
+  if (timeEl) timeEl.textContent = '0.000s';
+
+  // Reset editor state
+  state.editor.total = undefined;
 }
 
 // Initial event binding

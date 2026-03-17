@@ -18,6 +18,46 @@ export function toast(message, type = 'info') {
   setTimeout(() => el.remove(), TOAST_DURATION_MS);
 }
 
+/**
+ * Show a confirmation toast with Yes/No buttons
+ * @param {string} message - The confirmation message
+ * @param {Function} onConfirm - Callback when user clicks Yes
+ * @param {Function} [onCancel] - Optional callback when user clicks No
+ */
+export function confirmToast(message, onConfirm, onCancel) {
+  const el = document.createElement('div');
+  el.className = 'toast confirm-toast';
+
+  const msgSpan = document.createElement('span');
+  msgSpan.textContent = message;
+  el.appendChild(msgSpan);
+
+  const btnWrap = document.createElement('div');
+  btnWrap.className = 'confirm-toast-actions';
+
+  const btnYes = document.createElement('button');
+  btnYes.className = 'btn btn-sm confirm-toast-yes';
+  btnYes.textContent = 'Yes';
+  btnYes.addEventListener('click', () => {
+    el.remove();
+    if (onConfirm) onConfirm();
+  });
+
+  const btnNo = document.createElement('button');
+  btnNo.className = 'btn btn-sm confirm-toast-no';
+  btnNo.textContent = 'No';
+  btnNo.addEventListener('click', () => {
+    el.remove();
+    if (onCancel) onCancel();
+  });
+
+  btnWrap.appendChild(btnYes);
+  btnWrap.appendChild(btnNo);
+  el.appendChild(btnWrap);
+
+  elements.toastContainer.appendChild(el);
+}
+
 export function setStatus(status) {
   elements.connectionStatus.className = `status-badge ${status}`;
   elements.connectionStatus.querySelector('span:last-child').textContent =

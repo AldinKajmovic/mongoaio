@@ -171,7 +171,7 @@ function registerIpcHandlers() {
     validateSide(toSide);
     validateString(dbName, 'dbName');
     validateString(collName, 'collName');
-    return await db.copyCollection(fromSide, toSide, dbName, collName);
+    return await db.copyCollectionAcross(fromSide, dbName, collName, toSide, dbName, collName);
   }));
 
   ipcMain.handle('copy-collection-across', safeHandler(async (_event, fromSide, fromDb, fromColl, toSide, toDb, toColl) => {

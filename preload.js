@@ -28,4 +28,12 @@ contextBridge.exposeInMainWorld('api', {
   deleteDocuments: (side, dbName, collName, query) => ipcRenderer.invoke('delete-documents', side, dbName, collName, query),
   executeQuery: (side, dbName, collName, options) => ipcRenderer.invoke('execute-query', side, dbName, collName, options),
   importConnections: () => ipcRenderer.invoke('import-connections'),
+
+  // Auto-updater
+  getVersion: () => ipcRenderer.invoke('get-version'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  onUpdateAvailable: (callback) => ipcRenderer.on('update-available', (_e, data) => callback(data)),
+  onUpdateDownloadProgress: (callback) => ipcRenderer.on('update-download-progress', (_e, data) => callback(data)),
+  onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', () => callback()),
 });

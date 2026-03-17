@@ -1,0 +1,56 @@
+/* =============================================
+   Auto-Update Banner & Version Label
+   ============================================= */
+
+.update-banner {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(59, 130, 246, 0.12);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 5000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  animation: bannerSlideIn 0.3s ease;
+}
+
+@keyframes bannerSlideIn {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.update-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-update {
+  background: rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background var(--transition-fast);
+}
+
+.btn-update:hover {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+.version-label {
+  text-align: center;
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+}

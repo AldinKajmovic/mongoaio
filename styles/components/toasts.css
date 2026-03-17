@@ -53,3 +53,54 @@
   border: 1px solid rgba(59, 130, 246, 0.3);
   color: #93c5fd;
 }
+
+.toast.warning {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+/* Confirm Toast */
+.confirm-toast {
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(30, 30, 40, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  animation: toastIn 0.3s ease;
+  max-width: 320px;
+}
+
+.confirm-toast-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.confirm-toast-yes {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 4px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.confirm-toast-yes:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+.confirm-toast-no {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  padding: 4px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.confirm-toast-no:hover {
+  background: rgba(59, 130, 246, 0.35);
+}

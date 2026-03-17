@@ -1,12 +1,12 @@
 import { escapeHtml } from '../utils/dom.js';
+import { confirmToast } from '../utils/ui.js';
+import { hideShellPanel } from './shell.js';
 
 let tabs = [];      // { id, label, text, results[], context }
 let activeTabId = null;
 let nextId = 1;
 
-const containerEl = () => document.getElementById('editor-view-shell-content');
 const tabBarEl = () => document.getElementById('shell-tab-bar');
-const shellBody = () => document.getElementById('shell-tab-body');
 
 // --- Public API ---
 
@@ -34,7 +34,19 @@ export function addTab() {
 }
 
 export function closeTab(id) {
-  if (tabs.length <= 1) return; // Keep at least one tab
+  // Last tab — confirm and exit shell entirely
+  if (tabs.length <= 1) {
+    confirmToast('Are you sure you want to exit the shell?', () => {
+      tabs = [];
+      activeTabId = null;
+      nextId = 1;
+      hideShellPanel();
+      // Re-create a fresh tab for next time shell opens
+      addTab();
+    });
+    return;
+  }
+
   const idx = tabs.findIndex(t => t.id === id);
   if (idx === -1) return;
   tabs.splice(idx, 1);
@@ -112,10 +124,9 @@ function renderTabBar() {
 
   bar.innerHTML = tabs.map(t => {
     const active = t.id === activeTabId ? ' active' : '';
-    const closeBtn = tabs.length > 1
-      ? `<span class="shell-tab-close" data-tab-id="${t.id}" title="Close">&times;</span>` : '';
     return `<button class="shell-tab${active}" data-tab-id="${t.id}">
-      <span class="shell-tab-label">${escapeHtml(t.label)}</span>${closeBtn}
+      <span class="shell-tab-label">${escapeHtml(t.label)}</span>
+      <span class="shell-tab-close" data-tab-id="${t.id}" title="Close">&times;</span>
     </button>`;
   }).join('') +
     '<button class="shell-tab shell-tab-add" title="New Shell Tab">+</button>';

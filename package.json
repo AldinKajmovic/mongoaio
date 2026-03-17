@@ -12,9 +12,11 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "build:win": "electron-builder --win --x64",
-    "build:linux": "electron-builder --linux deb AppImage"
+    "build:linux": "electron-builder --linux deb AppImage",
+    "build:mac": "electron-builder --mac --x64 --arm64"
   },
   "dependencies": {
+    "electron-updater": "^6.8.3",
     "mongodb": "^6.3.0"
   },
   "devDependencies": {
@@ -24,6 +26,11 @@
   "build": {
     "appId": "com.mongoAIO.app",
     "productName": "MongoAIO",
+    "publish": {
+      "provider": "github",
+      "owner": "AldinKajmovic",
+      "repo": "mongoaio"
+    },
     "directories": {
       "output": "dist"
     },
@@ -39,6 +46,14 @@
         "AppImage"
       ],
       "category": "Development"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "icon.png",
+      "category": "public.app-category.developer-tools"
     }
   }
 }

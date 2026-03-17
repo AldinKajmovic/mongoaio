@@ -6,6 +6,7 @@ import { loadCollections } from '../components/collection-view.js';
 import { loadDocuments } from '../components/document-view.js';
 import { initEditorResizables } from '../editor/resize.js';
 import { loadEditorTree } from '../editor/tree.js';
+import { clearEditorResults } from '../editor/query.js';
 
 export function navigateTo(level, params = {}) {
   // Compare screen 
@@ -128,6 +129,7 @@ elements.btnDisconnect.addEventListener('click', async () => {
   state.collComparison = null;
   state.docComparison = null;
 
+  clearEditorResults();
   setStatus('disconnected');
   elements.btnDisconnect.style.display = 'none';
   showView('connection');
@@ -158,6 +160,9 @@ export async function loadDatabases() {
 
 export function initVisibility() {
   showView('connection');
+  if (!state.connected) {
+    clearEditorResults();
+  }
 }
 
 initVisibility();
@@ -187,6 +192,7 @@ if (btnEditorBack) {
       await window.api.disconnect();
       state.connected = false;
       state.editorOnlyMode = false;
+      clearEditorResults();
       setStatus('disconnected');
       elements.btnDisconnect.style.display = 'none';
       showView('connection');
@@ -208,6 +214,7 @@ if (btnCompareBack) {
     state.dbComparison = null;
     state.collComparison = null;
     state.docComparison = null;
+    clearEditorResults();
     setStatus('disconnected');
     elements.btnDisconnect.style.display = 'none';
     showView('connection');

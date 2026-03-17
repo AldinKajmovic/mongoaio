@@ -2,6 +2,17 @@
    Editor — Shell View
    ============================================= */
 
+#editor-view-shell-content {
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#editor-view-shell-content:not(.u-hidden) {
+  display: flex;
+}
+
 .editor-shell-container {
   display: flex;
   flex-direction: column;

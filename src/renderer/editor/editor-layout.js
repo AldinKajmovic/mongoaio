@@ -125,9 +125,10 @@ export function initEditorShell() {
               <div class="editor-data-panel" id="editor-data-table">
                 <div class="editor-table-wrapper"><table class="editor-table" id="editor-table"><thead><tr id="editor-table-head"><th class="editor-table-th">#</th></tr></thead><tbody id="editor-table-body"></tbody></table></div>
               </div>
+
             </div>
 
-            <!-- Shell View Content -->
+            <!-- Shell View Content (separate from editor) -->
             <div id="editor-view-shell-content" class="u-hidden">
               <div class="editor-shell-container">
                 <div id="shell-tab-bar" class="shell-tab-bar"></div>
@@ -150,9 +151,8 @@ export function initEditorShell() {
                 </div>
               </div>
             </div>
-
           </div>
-          
+
           <div class="editor-status-bar">
             <span class="editor-status-info">0 items selected</span>
             <div class="editor-status-right">
