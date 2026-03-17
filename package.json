@@ -1,6 +1,6 @@
 {
   "name": "mongoaio",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MongoDB editor with compare & sync feature",
   "author": {
     "name": "Aldin K",
