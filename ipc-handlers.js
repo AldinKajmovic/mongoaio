@@ -1,4 +1,4 @@
-const { ipcMain, dialog } = require('electron');
+const { app, ipcMain, dialog } = require('electron');
 const db = require('./src/db');
 const fs = require('fs');
 const path = require('path');
@@ -12,8 +12,12 @@ const {
   sanitizeErrorMessage,
 } = require('./src/main/validate');
 
+function getConfigPath() {
+  return path.join(app.getPath('userData'), 'connections.json');
+}
+
 function getConnections() {
-  const configPath = path.join(__dirname, 'connections.json');
+  const configPath = getConfigPath();
   try {
     if (fs.existsSync(configPath)) {
       return JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -23,7 +27,7 @@ function getConnections() {
 }
 
 function saveConnection(alias, url) {
-  const configPath = path.join(__dirname, 'connections.json');
+  const configPath = getConfigPath();
   const conns = getConnections();
   conns[alias] = url;
   fs.writeFileSync(configPath, JSON.stringify(conns, null, 2));
@@ -31,7 +35,7 @@ function saveConnection(alias, url) {
 }
 
 function deleteConnection(alias) {
-  const configPath = path.join(__dirname, 'connections.json');
+  const configPath = getConfigPath();
   const conns = getConnections();
   delete conns[alias];
   fs.writeFileSync(configPath, JSON.stringify(conns, null, 2));
@@ -51,16 +55,16 @@ function safeHandler(fn) {
 function registerIpcHandlers() {
   ipcMain.handle('get-connections', () => getConnections());
 
-  ipcMain.handle('save-connection', (_event, alias, url) => {
+  ipcMain.handle('save-connection', safeHandler(async (_event, alias, url) => {
     validateString(alias, 'alias');
     validateString(url, 'url');
     return saveConnection(alias, url);
-  });
+  }));
 
-  ipcMain.handle('delete-connection', (_event, alias) => {
+  ipcMain.handle('delete-connection', safeHandler(async (_event, alias) => {
     validateString(alias, 'alias');
     return deleteConnection(alias);
-  });
+  }));
 
   ipcMain.handle('connect', safeHandler(async (_event, url1, url2) => {
     validateConnectionUrl(url1);
@@ -258,8 +262,7 @@ function registerIpcHandlers() {
       }
     }
 
-    const configPath = path.join(__dirname, 'connections.json');
-    fs.writeFileSync(configPath, JSON.stringify(merged, null, 2));
+    fs.writeFileSync(getConfigPath(), JSON.stringify(merged, null, 2));
     
     return { success: true, connections: merged };
   }));
