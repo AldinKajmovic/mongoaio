@@ -1,5 +1,6 @@
 import { escapeHtml, highlightText } from '../utils/dom.js';
 import { syncTreeRowColumns, setupTableColumnResize } from './resize.js';
+import { getFieldType, isExpandable, valueSummary } from './value-viewer.js';
 
 export function renderJsonView(items, sq) {
   const jsonView = document.getElementById('editor-data-json');
@@ -52,27 +53,23 @@ export function renderTreeView(items, sq, expandedDocs) {
         </div>
         <div class="editor-doc-children">
           ${Object.entries(doc).map(([key, val]) => {
-        let type = 'String';
-        if (val === null) type = 'Null';
-        else if (Array.isArray(val)) type = 'Array';
-        else if (typeof val === 'number') {
-          type = Number.isInteger(val) ? 'Int32' : 'Double';
-        } else if (typeof val === 'boolean') type = 'Boolean';
-        else if (typeof val === 'object') type = 'Object';
-        // Basic detection for ObjectId if it's a 24-char hex string coming from the driver's serialization
-        if (key === '_id' || (typeof val === 'string' && /^[0-9a-fA-F]{24}$/.test(val))) {
-          if (key === '_id' || type === 'String') type = 'ObjectId';
-        }
-
-        const valStr = typeof val === 'object' ? JSON.stringify(val) : String(val);
+        const type = getFieldType(key, val);
+        const expandable = isExpandable(val);
+        const valStr = expandable ? valueSummary(val) : (val === null ? 'null' : String(val));
+        const keyHtml = sq ? highlightText(key, sq) : escapeHtml(key);
+        const valHtml = sq ? highlightText(valStr, sq) : escapeHtml(valStr);
         return `
-            <div class="editor-field-row" draggable="true" data-index="${i}" data-key="${escapeHtml(key)}" data-field="${escapeHtml(key)}" data-type="${type}" data-value='${escapeHtml(JSON.stringify(val))}'>
-              <span class="editor-field-indent"></span>
-              <span class="editor-field-key" data-index="${i}" data-key="${escapeHtml(key)}" data-type="key">${sq ? highlightText(key, sq) : escapeHtml(key)}</span>
-              <span class="editor-field-value" data-index="${i}" data-key="${escapeHtml(key)}" data-type="value">${sq ? highlightText(valStr, sq) : escapeHtml(valStr)}</span>
+            <div class="editor-field-row${expandable ? ' nested-expandable' : ''}" draggable="true"
+                 data-index="${i}" data-key="${escapeHtml(key)}" data-field="${escapeHtml(key)}"
+                 data-type="${type}" data-value='${escapeHtml(JSON.stringify(val))}' data-depth="0">
+              <span class="editor-field-indent">
+                ${expandable ? '<span class="tree-arrow nested-arrow">&#9654;</span>' : ''}
+              </span>
+              <span class="editor-field-key" data-index="${i}" data-key="${escapeHtml(key)}" data-type="key">${keyHtml}</span>
+              <span class="editor-field-value${expandable ? ' nested-summary' : ''}" data-index="${i}" data-key="${escapeHtml(key)}" data-type="value">${valHtml}</span>
               <span class="editor-field-type u-text-muted u-font-xs u-ml-8">${type}</span>
             </div>
-            `;
+            ${expandable ? '<div class="editor-nested-children"></div>' : ''}`;
       }).join('')}
         </div>
       </div>
@@ -110,27 +107,27 @@ export function renderTableView(items, sq, skip) {
         </td>
         ${columns.map(col => {
       const val = doc[col];
-      let type = 'String';
-      if (val === null) type = 'Null';
-      else if (Array.isArray(val)) type = 'Array';
-      else if (typeof val === 'number') {
-        type = Number.isInteger(val) ? 'Int32' : 'Double';
-      } else if (typeof val === 'boolean') type = 'Boolean';
-      else if (typeof val === 'object') type = 'Object';
-      if (col === '_id' || (typeof val === 'string' && /^[0-9a-fA-F]{24}$/.test(val))) {
-        if (col === '_id' || type === 'String') type = 'ObjectId';
-      }
+      const type = getFieldType(col, val);
+      const expandable = isExpandable(val);
 
       let displayVal = val === undefined ? '' : (typeof val === 'object' ? JSON.stringify(val) : String(val));
       const fullVal = val === undefined ? '' : JSON.stringify(val);
-      if (displayVal.length > 50) displayVal = displayVal.substring(0, 50) + '...';
+      const isTruncated = displayVal.length > 50;
+      if (isTruncated) displayVal = displayVal.substring(0, 50) + '...';
       const cellHtml = sq ? highlightText(displayVal, sq) : escapeHtml(displayVal);
+      const showExpand = expandable || isTruncated;
       return `
-            <td class="editor-table-td" draggable="true" title="${val === undefined ? '' : JSON.stringify(val).replace(/"/g, '&quot;')}"
+            <td class="editor-table-td${showExpand ? ' has-expandable' : ''}" draggable="true"
+                title="${val === undefined ? '' : JSON.stringify(val).replace(/"/g, '&quot;')}"
                 data-index="${i}" data-col="${col}" data-field="${col}" data-type="${type}"
                 data-value='${escapeHtml(fullVal)}'>
               <div class="table-cell-content">
                 <span class="cell-text">${cellHtml}</span>
+                ${showExpand ? `
+                  <button class="btn-expand-cell" data-value='${escapeHtml(fullVal)}' title="View full value">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                  </button>
+                ` : ''}
                 ${val !== undefined ? `
                   <button class="btn-copy-cell" data-value='${escapeHtml(fullVal)}' title="Copy full value">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>

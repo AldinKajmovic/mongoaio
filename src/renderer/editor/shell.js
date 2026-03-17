@@ -16,7 +16,7 @@ export function initEditorShellLogic() {
 
   // Run Actions
   if (elements.btnShellRunLine) {
-    elements.btnShellRunLine.addEventListener('click', () => runSelectedLines(true));
+    elements.btnShellRunLine.addEventListener('click', () => runSelectedLines());
   }
   if (elements.btnShellRunAll) {
     elements.btnShellRunAll.addEventListener('click', () => runAllLines());
@@ -46,27 +46,44 @@ export function initEditorShellLogic() {
 }
 
 function setupTabSwitching() {
-  const tabs = [
-    { btn: elements.btnEditorViewCollections, content: elements.editorViewCollectionsContent },
-    { btn: elements.btnEditorViewShell, content: elements.editorViewShellContent }
-  ];
+  // Shell button opens shell panel inside the result area
+  if (elements.btnEditorViewShell) {
+    elements.btnEditorViewShell.addEventListener('click', () => {
+      showShellPanel();
+    });
+  }
 
-  tabs.forEach(tab => {
-    if (tab.btn) {
-      tab.btn.addEventListener('click', () => {
-        tabs.forEach(t => {
-          if (t.btn) t.btn.classList.remove('active');
-          if (t.content) t.content.classList.add('u-hidden');
-        });
-        tab.btn.classList.add('active');
-        tab.content.classList.remove('u-hidden');
+  // Collections button returns to data view
+  if (elements.btnEditorViewCollections) {
+    elements.btnEditorViewCollections.addEventListener('click', () => {
+      hideShellPanel();
+    });
+  }
 
-        if (tab.btn === elements.btnEditorViewShell) {
-          updateShellContext();
-        }
-      });
-    }
-  });
+}
+
+/**
+ * Show the shell panel, hiding the collections/editor content
+ */
+export function showShellPanel() {
+  if (elements.editorViewCollectionsContent) elements.editorViewCollectionsContent.classList.add('u-hidden');
+  if (elements.editorViewShellContent) elements.editorViewShellContent.classList.remove('u-hidden');
+
+  if (elements.btnEditorViewShell) elements.btnEditorViewShell.classList.add('active');
+  if (elements.btnEditorViewCollections) elements.btnEditorViewCollections.classList.remove('active');
+
+  updateShellContext();
+}
+
+/**
+ * Hide the shell panel, returning to the collections/editor view
+ */
+export function hideShellPanel() {
+  if (elements.editorViewShellContent) elements.editorViewShellContent.classList.add('u-hidden');
+  if (elements.editorViewCollectionsContent) elements.editorViewCollectionsContent.classList.remove('u-hidden');
+
+  if (elements.btnEditorViewShell) elements.btnEditorViewShell.classList.remove('active');
+  if (elements.btnEditorViewCollections) elements.btnEditorViewCollections.classList.add('active');
 }
 
 /**
@@ -94,7 +111,7 @@ export function updateShellContext() {
   }
 }
 
-async function runSelectedLines(oneLineOnly = false) {
+async function runSelectedLines() {
   const textarea = elements.editorShellTextarea;
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;

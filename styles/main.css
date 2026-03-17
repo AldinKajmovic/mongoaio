@@ -12,6 +12,7 @@
 @import url('./components/modals.css');
 @import url('./components/modals-collection.css');
 @import url('./components/toasts.css');
+@import url('./components/updater.css');
 
 /* Views */
 @import url('./views/connection.css');

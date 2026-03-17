@@ -28,5 +28,7 @@ import './editor/inline-edit.js';
 import './editor/search.js';
 import { initEditorShellLogic } from './editor/shell.js';
 import './editor/resize.js';
+import { initUpdater } from './utils/updater.js';
 
 initEditorShellLogic();
+initUpdater();

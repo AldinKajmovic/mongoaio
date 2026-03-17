@@ -2,8 +2,9 @@ import { state, elements } from '../utils/state.js';
 import { toast, showLoading, hideLoading } from '../utils/ui.js';
 import { openAddDatabaseModal } from '../modals/add-database.js';
 import { openAddCollectionModal } from '../modals/add-collection.js';
-import { updateShellContext } from './shell.js';
+import { updateShellContext, hideShellPanel } from './shell.js';
 import { renderEditorTree } from './tree-renderer.js';
+import { clearEditorResults } from './query.js';
 import { savedConnections } from '../utils/connections.js';
 import { editorConnectAlias, editorConnectedAliases } from './tree-data.js';
 
@@ -66,6 +67,8 @@ export async function disconnectServer(alias) {
         state.editor.alias = null;
         state.editor.db = null;
         state.editor.coll = null;
+        clearEditorResults();
+        hideShellPanel();
         updateShellContext();
       }
       toast(`Disconnected from ${alias}`, 'info');
@@ -76,6 +79,8 @@ export async function disconnectServer(alias) {
       state.editor.alias = null;
       state.editor.db = null;
       state.editor.coll = null;
+      clearEditorResults();
+      hideShellPanel();
       updateShellContext();
       toast('All connections closed', 'info');
     }

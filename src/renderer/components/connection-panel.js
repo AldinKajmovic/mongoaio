@@ -56,6 +56,7 @@ export function initConnectionPanel() {
         <div id="connection-disclaimer" class="disclaimer-note">
           <p>Use custom MongoDB connection URLs above to access your databases. <br/>Saved connections can be managed and selected from the dropdowns.</p>
         </div>
+        <div class="version-label"><span id="app-version"></span></div>
       </div>
     </div>
   `;

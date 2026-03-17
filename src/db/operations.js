@@ -65,29 +65,6 @@ async function copyDocument(fromSide, toSide, dbName, collName, docId) {
   await toClient.db(dbName).collection(collName).replaceOne(query, doc, { upsert: true });
   return { success: true };
 }
-// check copy collection and copy accross if i remove this create copied count 0 
-async function copyCollection(fromSide, toSide, dbName, collName) {
-  const fromClient = getClient(fromSide);
-  const toClient = getClient(toSide);
-
-  const docs = await fromClient.db(dbName).collection(collName).find({}).toArray();
-  if (docs.length === 0) {
-    await toClient.db(dbName).createCollection(collName);
-    return { copiedCount: 0 };
-  }
-  try {
-    const result = await toClient.db(dbName).collection(collName).insertMany(docs, { ordered: false });
-    return { copiedCount: result.insertedCount };
-  } catch (err) {
-    if (err.code === 11000) {
-      // Some duplicates, but others inserted
-      return { copiedCount: err.result?.nInserted || 0, warning: 'Some documents already existed' };
-    }
-    throw err;
-  }
-}
-
-
 async function copyCollectionAcross(fromSide, fromDb, fromColl, toSide, toDb, toColl) {
   const fromClient = getClient(fromSide);
   const toClient = getClient(toSide);
@@ -155,7 +132,6 @@ module.exports = {
   deleteDocument,
   patchDocument,
   copyDocument,
-  copyCollection,
   copyCollectionAcross,
   createDatabase,
   dropDatabase,

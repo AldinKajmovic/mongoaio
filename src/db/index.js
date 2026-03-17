@@ -30,7 +30,6 @@ module.exports = {
   deleteDocument: operations.deleteDocument,
   patchDocument: operations.patchDocument,
   copyDocument: operations.copyDocument,
-  copyCollection: operations.copyCollection,
   copyCollectionAcross: operations.copyCollectionAcross,
   createDatabase: operations.createDatabase,
   dropDatabase: operations.dropDatabase,

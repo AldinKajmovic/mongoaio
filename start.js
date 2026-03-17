@@ -31,6 +31,7 @@ if (isLinux) {
   env.ELECTRON_DISABLE_SANDBOX = '1';
   electronArgs.push('--no-sandbox');
   electronArgs.push('--disable-setuid-sandbox');
+  electronArgs.push('--disable-gpu');
 }
 
 if (isDocker) {
