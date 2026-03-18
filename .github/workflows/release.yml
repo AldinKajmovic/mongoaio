@@ -22,7 +22,7 @@ jobs:
       - run: npm ci
 
       - name: Build Linux packages
-        run: npx electron-builder --linux deb AppImage
+        run: npx electron-builder --linux deb AppImage --publish never
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -46,7 +46,7 @@ jobs:
       - run: npm ci
 
       - name: Build Windows packages
-        run: npx electron-builder --win --x64
+        run: npx electron-builder --win --x64 --publish never
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -69,7 +69,7 @@ jobs:
       - run: npm ci
 
       - name: Build macOS packages
-        run: npx electron-builder --mac --x64 --arm64
+        run: npx electron-builder --mac --x64 --arm64 --publish never
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
