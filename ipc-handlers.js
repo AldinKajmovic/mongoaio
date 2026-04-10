@@ -225,6 +225,26 @@ function registerIpcHandlers() {
     return await db.renameField(side, dbName, collName, oldName, newName);
   }));
 
+  ipcMain.handle('shell-execute', safeHandler(async (_event, side, dbName, collName, method, params) => {
+    validateSide(side);
+    validateString(dbName, 'dbName');
+    validateString(collName, 'collName');
+    validateString(method, 'method');
+    if (!Array.isArray(params)) throw new Error('params must be an array');
+    const ALLOWED = ['deleteOne', 'deleteMany', 'insertOne', 'insertMany', 'updateOne', 'updateMany'];
+    if (!ALLOWED.includes(method)) throw new Error(`Unsupported method: ${method}`);
+    const p = params;
+    const ops = {
+      deleteOne: () => { validateObject(p[0], 'filter'); return db.deleteOneByFilter(side, dbName, collName, p[0]); },
+      deleteMany: () => { validateObject(p[0], 'filter'); return db.deleteDocuments(side, dbName, collName, p[0]); },
+      insertOne: () => { validateObject(p[0], 'document'); return db.insertDocument(side, dbName, collName, p[0]); },
+      insertMany: () => { if (!Array.isArray(p[0])) throw new Error('insertMany requires an array'); return db.insertManyDocs(side, dbName, collName, p[0]); },
+      updateOne: () => { validateObject(p[0], 'filter'); validateObject(p[1], 'update'); return db.updateOneByFilter(side, dbName, collName, p[0], p[1]); },
+      updateMany: () => { validateObject(p[0], 'filter'); validateObject(p[1], 'update'); return db.updateManyByFilter(side, dbName, collName, p[0], p[1]); },
+    };
+    return await ops[method]();
+  }));
+
   ipcMain.handle('execute-query', safeHandler(async (_event, side, dbName, collName, options) => {
     validateSide(side);
     validateString(dbName, 'dbName');

@@ -146,40 +146,79 @@ async function runAllLines() {
   executeBlock(text);
 }
 
+const READ_METHODS = ['find', 'findOne', 'countDocuments', 'aggregate'];
+const WRITE_METHODS = ['deleteMany', 'deleteOne', 'insertOne', 'insertMany', 'updateOne', 'updateMany'];
+const ALL_METHODS = [...READ_METHODS, ...WRITE_METHODS].join('|');
+const SHELL_PATTERN = new RegExp(
+  `db\\.(?:getCollection\\(['\"](.+?)['\"]\\)|([a-zA-Z0-9_$]+))\\.(${ALL_METHODS})\\(([\\s\\S]*?)\\)`
+);
+
 /**
- * Parse a shell command string into a query object and target collection.
- * @returns {{ query?: object, targetColl?: string, error?: string }}
+ * Split top-level comma-separated JSON parameters, respecting nesting.
+ * @returns {string[]}
+ */
+function splitParams(raw) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (ch === '{' || ch === '[') depth++;
+    else if (ch === '}' || ch === ']') depth--;
+    else if (ch === ',' && depth === 0) {
+      parts.push(raw.substring(start, i).trim());
+      start = i + 1;
+    }
+  }
+  parts.push(raw.substring(start).trim());
+  return parts.filter(Boolean);
+}
+
+/**
+ * Parse a shell command string into a structured command.
+ * @returns {{ method: string, query?: object, params?: Array, targetColl?: string, error?: string }}
  */
 function parseShellCommand(code) {
-  let query = {};
   let targetColl = state.editor.coll;
-
-  const pattern = /db\.(?:getCollection\(['"](.+?)['"]\)|([a-zA-Z0-9_$]+))\.(find|findOne|countDocuments|aggregate)\(([\s\S]*?)\)/;
-  const match = code.match(pattern);
+  const match = code.match(SHELL_PATTERN);
 
   if (match) {
     targetColl = match[1] || match[2];
-    const params = match[4].trim();
-    if (params) {
-      try {
-        query = JSON.parse(params);
-      } catch (e) {
-        const blockMatch = params.match(/\{[\s\S]*\}/);
-        if (blockMatch) {
-          try { query = JSON.parse(blockMatch[0]); }
-          catch (e2) { return { error: `Parameter Parse Error: ${e2.message}` }; }
+    const method = match[3];
+    const rawParams = match[4].trim();
+
+    if (READ_METHODS.includes(method)) {
+      let query = {};
+      if (rawParams) {
+        try { query = JSON.parse(rawParams); }
+        catch (e) {
+          const blockMatch = rawParams.match(/\{[\s\S]*\}/);
+          if (blockMatch) {
+            try { query = JSON.parse(blockMatch[0]); }
+            catch (e2) { return { error: `Parameter Parse Error: ${e2.message}` }; }
+          }
         }
       }
+      return { method: 'read', query, targetColl };
     }
-  } else {
+
+    // Write operation — parse potentially multiple params
+    const parts = splitParams(rawParams);
     try {
-      query = JSON.parse(code);
-    } catch (err) {
-      return { error: `Syntax Error: Could not parse as mongosh command or JSON filter. Ensure your query is valid JSON. Error: ${err.message}` };
+      const parsed = parts.length > 0 ? parts.map(p => JSON.parse(p)) : [{}];
+      return { method, params: parsed, targetColl };
+    } catch (e) {
+      return { error: `Parameter Parse Error: ${e.message}` };
     }
   }
 
-  return { query, targetColl };
+  // Fallback: raw JSON filter
+  try {
+    const query = JSON.parse(code);
+    return { method: 'read', query, targetColl };
+  } catch (err) {
+    return { error: `Syntax Error: Could not parse as mongosh command or JSON filter. Ensure your query is valid JSON. Error: ${err.message}` };
+  }
 }
 
 async function executeBlock(text) {
@@ -192,7 +231,7 @@ async function executeBlock(text) {
     return;
   }
 
-  const { query, targetColl } = parsed;
+  const { targetColl } = parsed;
 
   if (!targetColl) {
     toast('No collection target. Use db.collection.find() or select one in the tree.', 'warning');
@@ -207,12 +246,21 @@ async function executeBlock(text) {
   try {
     const side = state.editor.side || 'source';
     const dbName = state.editor.db;
-    const result = await window.api.executeQuery(side, dbName, targetColl, { filter: query });
 
-    if (result.error) {
-      appendShellResult(code, result.error, 'error');
+    if (parsed.method === 'read') {
+      const result = await window.api.executeQuery(side, dbName, targetColl, { filter: parsed.query });
+      if (result.error) {
+        appendShellResult(code, result.error, 'error');
+      } else {
+        appendShellResult(code, result.items, 'success', result);
+      }
     } else {
-      appendShellResult(code, result.items, 'success', result);
+      const result = await window.api.shellExecute(side, dbName, targetColl, parsed.method, parsed.params);
+      if (result.error) {
+        appendShellResult(code, result.error, 'error');
+      } else {
+        appendShellResult(code, result, 'success');
+      }
     }
   } catch (err) {
     appendShellResult(code, `Execution Error: ${err.message}`, 'error');

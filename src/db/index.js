@@ -37,4 +37,8 @@ module.exports = {
   createCollection: operations.createCollection,
   renameField: operations.renameField,
   deleteDocuments: operations.deleteDocuments,
+  deleteOneByFilter: operations.deleteOneByFilter,
+  insertManyDocs: operations.insertManyDocs,
+  updateOneByFilter: operations.updateOneByFilter,
+  updateManyByFilter: operations.updateManyByFilter,
 };
