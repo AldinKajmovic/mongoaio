@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('api', {
   createCollection: (side, dbName, collName, options) => ipcRenderer.invoke('create-collection', side, dbName, collName, options),
   renameField: (side, dbName, collName, oldName, newName) => ipcRenderer.invoke('rename-field', side, dbName, collName, oldName, newName),
   deleteDocuments: (side, dbName, collName, query) => ipcRenderer.invoke('delete-documents', side, dbName, collName, query),
+  shellExecute: (side, dbName, collName, method, params) => ipcRenderer.invoke('shell-execute', side, dbName, collName, method, params),
   executeQuery: (side, dbName, collName, options) => ipcRenderer.invoke('execute-query', side, dbName, collName, options),
   importConnections: () => ipcRenderer.invoke('import-connections'),
 

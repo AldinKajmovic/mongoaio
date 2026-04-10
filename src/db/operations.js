@@ -124,6 +124,29 @@ async function deleteDocuments(side, dbName, collName, query) {
   return { deletedCount: result.deletedCount };
 }
 
+async function deleteOneByFilter(side, dbName, collName, filter) {
+  const client = getClient(side);
+  const result = await client.db(dbName).collection(collName).deleteOne(filter);
+  return { deletedCount: result.deletedCount };
+}
+
+async function insertManyDocs(side, dbName, collName, docs) {
+  const client = getClient(side);
+  const result = await client.db(dbName).collection(collName).insertMany(docs);
+  return { insertedCount: result.insertedCount };
+}
+
+async function updateOneByFilter(side, dbName, collName, filter, update) {
+  const client = getClient(side);
+  const result = await client.db(dbName).collection(collName).updateOne(filter, update);
+  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+}
+
+async function updateManyByFilter(side, dbName, collName, filter, update) {
+  const client = getClient(side);
+  const result = await client.db(dbName).collection(collName).updateMany(filter, update);
+  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+}
 
 module.exports = {
   getDocument,
@@ -139,4 +162,8 @@ module.exports = {
   createCollection,
   renameField,
   deleteDocuments,
+  deleteOneByFilter,
+  insertManyDocs,
+  updateOneByFilter,
+  updateManyByFilter,
 };
