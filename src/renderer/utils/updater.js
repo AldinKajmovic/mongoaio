@@ -62,6 +62,19 @@ export function initUpdater() {
     if (el) el.textContent = `${data.percent}%`;
   });
 
+  // Update error — surface to user so failures aren't silent
+  window.api.onUpdateError((data) => {
+    console.error('Auto-update error:', data.message);
+    showBanner(`
+      <span class="update-banner-text">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Update check failed: ${data.message}
+      </span>
+      <button id="btn-update-error-dismiss" class="btn btn-sm btn-ghost">Dismiss</button>
+    `);
+    document.getElementById('btn-update-error-dismiss').addEventListener('click', hideBanner);
+  });
+
   // Update downloaded — show install prompt
   window.api.onUpdateDownloaded(() => {
     showBanner(`

@@ -21,6 +21,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Sync version from tag
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+
       - name: Build Linux packages
         run: npx electron-builder --linux deb AppImage --publish never
 
@@ -31,6 +34,7 @@ jobs:
           path: |
             dist/*.deb
             dist/*.AppImage
+            dist/latest-linux.yml
           retention-days: 1
 
   build-windows:
@@ -45,6 +49,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Sync version from tag
+        run: npm version "$($env:GITHUB_REF_NAME -replace '^v','')" --no-git-tag-version
+
       - name: Build Windows packages
         run: npx electron-builder --win --x64 --publish never
 
@@ -54,6 +61,7 @@ jobs:
           name: windows-builds
           path: |
             dist/*.exe
+            dist/latest.yml
           retention-days: 1
 
   build-macos:
@@ -68,6 +76,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Sync version from tag
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+
       - name: Build macOS packages
         run: npx electron-builder --mac --x64 --arm64 --publish never
 
@@ -78,6 +89,7 @@ jobs:
           path: |
             dist/*.dmg
             dist/*.zip
+            dist/latest-mac.yml
           retention-days: 1
 
   publish:
