@@ -69,7 +69,9 @@ function initUpdater(win) {
 
   // Check for updates shortly after launch (give the app time to fully load)
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(() => {});
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.error('Auto-update check failed:', err.message);
+    });
   }, 5000);
 }
 
