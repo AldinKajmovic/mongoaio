@@ -1,8 +1,8 @@
 import { state, elements } from '../utils/state.js';
 import { toast } from '../utils/ui.js';
-import { debounce } from '../utils/dom.js';
 import { appendShellResult } from './shell-renderer.js';
 import { initShellTabs } from './shell-tabs.js';
+import { hideMetricsPanel } from './metrics.js';
 
 /**
  * Initialize Shell Tab Event Listeners
@@ -37,11 +37,6 @@ export function initEditorShellLogic() {
         }
       }
     });
-
-    // Validation with Debounce
-    elements.editorShellTextarea.addEventListener('input', debounce(() => {
-      validateShellContent();
-    }, 500));
   }
 }
 
@@ -66,6 +61,7 @@ function setupTabSwitching() {
  * Show the shell panel, hiding the collections/editor content
  */
 export function showShellPanel() {
+  hideMetricsPanel();
   if (elements.editorViewCollectionsContent) elements.editorViewCollectionsContent.classList.add('u-hidden');
   if (elements.editorViewShellContent) elements.editorViewShellContent.classList.remove('u-hidden');
 
@@ -79,6 +75,7 @@ export function showShellPanel() {
  * Hide the shell panel, returning to the collections/editor view
  */
 export function hideShellPanel() {
+  hideMetricsPanel();
   if (elements.editorViewShellContent) elements.editorViewShellContent.classList.add('u-hidden');
   if (elements.editorViewCollectionsContent) elements.editorViewCollectionsContent.classList.remove('u-hidden');
 
@@ -146,139 +143,90 @@ async function runAllLines() {
   executeBlock(text);
 }
 
-const READ_METHODS = ['find', 'findOne', 'countDocuments', 'aggregate'];
-const WRITE_METHODS = ['deleteMany', 'deleteOne', 'insertOne', 'insertMany', 'updateOne', 'updateMany'];
-const ALL_METHODS = [...READ_METHODS, ...WRITE_METHODS].join('|');
-const SHELL_PATTERN = new RegExp(
-  `db\\.(?:getCollection\\(['\"](.+?)['\"]\\)|([a-zA-Z0-9_$]+))\\.(${ALL_METHODS})\\(([\\s\\S]*?)\\)`
-);
-
 /**
- * Split top-level comma-separated JSON parameters, respecting nesting.
- * @returns {string[]}
+ * Strip JS comments from a command block without touching string contents.
+ * Removes // line comments and block comments while leaving quoted text intact.
  */
-function splitParams(raw) {
-  const parts = [];
-  let depth = 0;
-  let start = 0;
-  for (let i = 0; i < raw.length; i++) {
-    const ch = raw[i];
-    if (ch === '{' || ch === '[') depth++;
-    else if (ch === '}' || ch === ']') depth--;
-    else if (ch === ',' && depth === 0) {
-      parts.push(raw.substring(start, i).trim());
-      start = i + 1;
+function stripComments(code) {
+  let out = '';
+  let str = null; // active quote char, or null
+  for (let i = 0; i < code.length; i++) {
+    const ch = code[i];
+    const next = code[i + 1];
+    if (str) {
+      out += ch;
+      if (ch === '\\') { out += code[++i] ?? ''; continue; }
+      if (ch === str) str = null;
+      continue;
     }
+    if (ch === '"' || ch === "'" || ch === '`') { str = ch; out += ch; continue; }
+    if (ch === '/' && next === '/') { while (i < code.length && code[i] !== '\n') i++; out += '\n'; continue; }
+    if (ch === '/' && next === '*') { i += 2; while (i < code.length && !(code[i] === '*' && code[i + 1] === '/')) i++; i++; continue; }
+    out += ch;
   }
-  parts.push(raw.substring(start).trim());
-  return parts.filter(Boolean);
+  return out;
 }
 
 /**
- * Parse a shell command string into a structured command.
- * @returns {{ method: string, query?: object, params?: Array, targetColl?: string, error?: string }}
+ * If the block is a bare JSON filter (mongosh shorthand), turn it into a
+ * find() against the currently-selected collection.
  */
-function parseShellCommand(code) {
-  let targetColl = state.editor.coll;
-  const match = code.match(SHELL_PATTERN);
-
-  if (match) {
-    targetColl = match[1] || match[2];
-    const method = match[3];
-    const rawParams = match[4].trim();
-
-    if (READ_METHODS.includes(method)) {
-      let query = {};
-      if (rawParams) {
-        try { query = JSON.parse(rawParams); }
-        catch (e) {
-          const blockMatch = rawParams.match(/\{[\s\S]*\}/);
-          if (blockMatch) {
-            try { query = JSON.parse(blockMatch[0]); }
-            catch (e2) { return { error: `Parameter Parse Error: ${e2.message}` }; }
-          }
-        }
-      }
-      return { method: 'read', query, targetColl };
-    }
-
-    // Write operation — parse potentially multiple params
-    const parts = splitParams(rawParams);
-    try {
-      const parsed = parts.length > 0 ? parts.map(p => JSON.parse(p)) : [{}];
-      return { method, params: parsed, targetColl };
-    } catch (e) {
-      return { error: `Parameter Parse Error: ${e.message}` };
-    }
-  }
-
-  // Fallback: raw JSON filter
+function expandBareFilter(code) {
+  const trimmed = code.trim();
+  if (!trimmed.startsWith('{')) return code;
   try {
-    const query = JSON.parse(code);
-    return { method: 'read', query, targetColl };
-  } catch (err) {
-    return { error: `Syntax Error: Could not parse as mongosh command or JSON filter. Ensure your query is valid JSON. Error: ${err.message}` };
+    JSON.parse(trimmed);
+  } catch (_) {
+    return code; // not valid JSON — let the engine parse it as JS
   }
+  const coll = state.editor.coll;
+  if (!coll) return code;
+  return `db.getCollection(${JSON.stringify(coll)}).find(${trimmed})`;
 }
 
 async function executeBlock(text) {
-  const code = text.replace(/\/\/.*/g, '').trim();
+  const code = expandBareFilter(stripComments(text).trim());
   if (!code) return;
-
-  const parsed = parseShellCommand(code);
-  if (parsed.error) {
-    appendShellResult(code, parsed.error, 'error');
-    return;
-  }
-
-  const { targetColl } = parsed;
-
-  if (!targetColl) {
-    toast('No collection target. Use db.collection.find() or select one in the tree.', 'warning');
-    return;
-  }
 
   if (!state.editor.db) {
     toast('No database selected. Click on a database in the tree sidebar first.', 'warning');
     return;
   }
 
-  try {
-    const side = state.editor.side || 'source';
-    const dbName = state.editor.db;
+  const side = state.editor.side || 'source';
+  const dbName = state.editor.db;
 
-    if (parsed.method === 'read') {
-      const result = await window.api.executeQuery(side, dbName, targetColl, { filter: parsed.query });
-      if (result.error) {
-        appendShellResult(code, result.error, 'error');
-      } else {
-        appendShellResult(code, result.items, 'success', result);
-      }
-    } else {
-      const result = await window.api.shellExecute(side, dbName, targetColl, parsed.method, parsed.params);
-      if (result.error) {
-        appendShellResult(code, result.error, 'error');
-      } else {
-        appendShellResult(code, result, 'success');
-      }
+  try {
+    const res = await window.api.shellEval(side, dbName, code);
+    if (res.error) {
+      appendShellResult(text, res.error, 'error');
+      return;
+    }
+
+    const content = res.result === undefined ? '(no value returned)' : res.result;
+    const meta = {
+      total: res.total !== undefined ? res.total : (res.isArray ? res.count : undefined),
+      printed: res.printed || [],
+      truncated: !!res.truncated,
+      // Server-side pagination: keep what's needed to fetch other pages.
+      paginated: !!res.paginated,
+      pageSize: res.pageSize || 10,
+      hasMore: !!res.hasMore,
+      side, db: dbName, code,
+      // Live cursor for sequential Next (mongosh `it`); cache visited pages so
+      // Prev/First are instant; cursorPage tracks how far the cursor has read.
+      cursorId: res.cursorId || null,
+      cursorPage: 1,
+      cache: res.paginated ? { 1: content } : null,
+    };
+    appendShellResult(text, content, 'success', meta);
+
+    if (res.truncated && !res.paginated) {
+      const shown = Array.isArray(res.result) ? res.result.length : '';
+      const ofTotal = res.count !== undefined ? ` of ${res.count}` : '';
+      toast(`Result truncated to the first ${shown}${ofTotal} documents. Use .limit() / .skip() to page through more.`, 'warning');
     }
   } catch (err) {
-    appendShellResult(code, `Execution Error: ${err.message}`, 'error');
-  }
-}
-
-function validateShellContent() {
-  const text = elements.editorShellTextarea.value.replace(/\/\/.*/g, '').trim();
-  if (!text) {
-    elements.shellJsonError.classList.add('u-hidden');
-    return;
-  }
-
-  try {
-    JSON.parse(text);
-    elements.shellJsonError.classList.add('u-hidden');
-  } catch (e) {
-    elements.shellJsonError.textContent = 'Invalid JSON';
-    elements.shellJsonError.classList.remove('u-hidden');
+    appendShellResult(text, `Execution Error: ${err.message}`, 'error');
   }
 }

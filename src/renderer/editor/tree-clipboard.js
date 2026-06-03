@@ -34,33 +34,6 @@ export async function copyAllCollections(alias, dbName) {
 }
 
 /**
- * Export collection names as a text list to the system clipboard.
- */
-export async function exportCollections(alias, dbName) {
-  await ensureActive(alias);
-  showLoading(`Listing collections in ${dbName}...`);
-  try {
-    const listRes = await window.api.listCollections('source', dbName);
-    if (listRes.error) {
-      toast(`Error listing collections: ${listRes.error}`, 'error');
-      return;
-    }
-    const colls = listRes.collections || [];
-    if (colls.length === 0) {
-      toast('No collections to export', 'warning');
-      return;
-    }
-    const text = colls.join('\n');
-    navigator.clipboard.writeText(text);
-    toast(`Exported ${colls.length} collection name(s) to clipboard`, 'success');
-  } catch (err) {
-    toast(`Error: ${err.message}`, 'error');
-  } finally {
-    hideLoading();
-  }
-}
-
-/**
  * Paste collections from clipboard into a target database.
  */
 export async function pasteCollections(targetAlias, targetDb) {

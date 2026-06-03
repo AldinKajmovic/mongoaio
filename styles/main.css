@@ -28,3 +28,5 @@
 @import url('./views/editor-panels-query.css');
 @import url('./views/editor-tree.css');
 @import url('./views/editor-shell.css');
+@import url('./views/editor-shell-table.css');
+@import url('./views/editor-metrics.css');

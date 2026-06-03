@@ -104,18 +104,18 @@ export const elements = {
   get editorTreeSearch() { return $('#editor-tree-search'); },
   get btnEditorAddDoc() { return $('#btn-editor-add-doc'); },
   get btnEditorSearchLocal() { return $('#btn-editor-search-local'); },
-  get btnImportConnections() { return $('#btn-import-connections'); },
 
   get btnEditorViewCollections() { return $('#btn-editor-view-collections'); },
   get btnEditorViewShell() { return $('#btn-editor-view-shell'); },
+  get btnEditorViewMetrics() { return $('#btn-editor-view-metrics'); },
 
   get editorViewCollectionsContent() { return $('#editor-view-collections-content'); },
   get editorViewShellContent() { return $('#editor-view-shell-content'); },
+  get editorViewMetricsContent() { return $('#editor-view-metrics-content'); },
 
   get editorShellTextarea() { return $('#editor-shell-textarea'); },
   get btnShellRunLine() { return $('#btn-shell-run-line'); },
   get btnShellRunAll() { return $('#btn-shell-run-all'); },
-  get shellJsonError() { return $('#shell-json-error'); },
   get editorShellResults() { return $('#editor-shell-results'); },
   get shellActiveTarget() { return $('#shell-active-target'); },
 

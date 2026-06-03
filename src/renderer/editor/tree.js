@@ -1,12 +1,11 @@
 import { state, elements } from '../utils/state.js';
 import { debounce } from '../utils/dom.js';
-import { savedConnections, loadConnections } from '../utils/connections.js';
+import { savedConnections } from '../utils/connections.js';
 import { runEditorQuery } from './query.js';
-import { renderEditorTree } from './tree-renderer.js';
+import { renderEditorTree, filterEditorTree } from './tree-renderer.js';
 import { updateShellContext } from './shell.js';
 import { editorConnectAlias, editorConnectedAliases } from './tree-data.js';
 import { setupTreeHandlers } from './tree-handlers.js';
-import { toast } from '../utils/ui.js';
 
 export { renderEditorTree, editorConnectedAliases };
 
@@ -46,7 +45,7 @@ function selectCollection(headerEl, alias, dbName, collName) {
 }
 
 // Initialize tree search
-const editorTreeSearchDebounced = debounce((query) => renderEditorTree(query), 300);
+const editorTreeSearchDebounced = debounce((query) => filterEditorTree(query), 300);
 const treeSearchInput = document.getElementById('editor-tree-search');
 if (treeSearchInput) {
   treeSearchInput.addEventListener('input', e => editorTreeSearchDebounced(e.target.value));
@@ -83,18 +82,4 @@ export function loadEditorTree() {
       }
     }
   }
-}
-
-// Import connections event listener
-if (elements.btnImportConnections) {
-  elements.btnImportConnections.addEventListener('click', async () => {
-    const result = await window.api.importConnections();
-    if (result.success) {
-      toast('Connections imported successfully', 'success');
-      await loadConnections();
-      renderEditorTree();
-    } else if (result.message && result.message !== 'Canceled') {
-      toast(`Import failed: ${result.error || result.message}`, 'error');
-    }
-  });
 }

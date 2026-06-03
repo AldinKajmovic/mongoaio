@@ -1,4 +1,4 @@
-const { app, ipcMain, dialog } = require('electron');
+const { app, ipcMain } = require('electron');
 const db = require('./src/db');
 const fs = require('fs');
 const path = require('path');
@@ -225,24 +225,33 @@ function registerIpcHandlers() {
     return await db.renameField(side, dbName, collName, oldName, newName);
   }));
 
-  ipcMain.handle('shell-execute', safeHandler(async (_event, side, dbName, collName, method, params) => {
+  // Evaluate an arbitrary mongosh-style command/script against the live driver.
+  // Supports the full driver surface (find/aggregate/bulkWrite/indexes/...),
+  // mongosh helpers (ObjectId, ISODate, NumberLong, ...) and legacy aliases.
+  ipcMain.handle('shell-eval', safeHandler(async (_event, side, dbName, code, options) => {
     validateSide(side);
     validateString(dbName, 'dbName');
-    validateString(collName, 'collName');
-    validateString(method, 'method');
-    if (!Array.isArray(params)) throw new Error('params must be an array');
-    const ALLOWED = ['deleteOne', 'deleteMany', 'insertOne', 'insertMany', 'updateOne', 'updateMany'];
-    if (!ALLOWED.includes(method)) throw new Error(`Unsupported method: ${method}`);
-    const p = params;
-    const ops = {
-      deleteOne: () => { validateObject(p[0], 'filter'); return db.deleteOneByFilter(side, dbName, collName, p[0]); },
-      deleteMany: () => { validateObject(p[0], 'filter'); return db.deleteDocuments(side, dbName, collName, p[0]); },
-      insertOne: () => { validateObject(p[0], 'document'); return db.insertDocument(side, dbName, collName, p[0]); },
-      insertMany: () => { if (!Array.isArray(p[0])) throw new Error('insertMany requires an array'); return db.insertManyDocs(side, dbName, collName, p[0]); },
-      updateOne: () => { validateObject(p[0], 'filter'); validateObject(p[1], 'update'); return db.updateOneByFilter(side, dbName, collName, p[0], p[1]); },
-      updateMany: () => { validateObject(p[0], 'filter'); validateObject(p[1], 'update'); return db.updateManyByFilter(side, dbName, collName, p[0], p[1]); },
-    };
-    return await ops[method]();
+    validateString(code, 'code');
+    return await db.evaluateShell(side, dbName, code, options || {});
+  }));
+
+  // Stream the next batch from a live shell cursor (mongosh `it` semantics).
+  ipcMain.handle('shell-cursor-next', safeHandler(async (_event, cursorId) => {
+    validateString(cursorId, 'cursorId');
+    return await db.shellCursorNext(cursorId);
+  }));
+
+  // Release a live shell cursor (result removed / tab closed / shell exited).
+  ipcMain.handle('shell-cursor-close', safeHandler(async (_event, cursorId) => {
+    validateString(cursorId, 'cursorId');
+    await db.closeShellCursor(cursorId);
+    return { ok: true };
+  }));
+
+  // Live server performance metrics (serverStatus + top + currentOp).
+  ipcMain.handle('server-metrics', safeHandler(async (_event, side) => {
+    validateSide(side);
+    return await db.getServerMetrics(side);
   }));
 
   ipcMain.handle('execute-query', safeHandler(async (_event, side, dbName, collName, options) => {
@@ -251,40 +260,6 @@ function registerIpcHandlers() {
     validateString(collName, 'collName');
     const opts = validateOptions(options, 'options');
     return await db.executeQuery(side, dbName, collName, opts);
-  }));
-
-  ipcMain.handle('import-connections', safeHandler(async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: [{ name: 'JSON', extensions: ['json'] }]
-    });
-
-    if (result.canceled || result.filePaths.length === 0) {
-      return { success: false, message: 'Canceled' };
-    }
-
-    const filePath = result.filePaths[0];
-    const data = fs.readFileSync(filePath, 'utf8');
-    const imported = JSON.parse(data);
-
-    if (typeof imported !== 'object' || imported === null) {
-      throw new Error('Invalid JSON format: expected an object of connections.');
-    }
-
-    // Merge with existing
-    const current = getConnections();
-    const merged = { ...current, ...imported };
-    
-    // Simple validation: ensure all values are strings
-    for (const [alias, url] of Object.entries(merged)) {
-      if (typeof alias !== 'string' || typeof url !== 'string') {
-        throw new Error('Invalid connection format: alias and URL must be strings.');
-      }
-    }
-
-    fs.writeFileSync(getConfigPath(), JSON.stringify(merged, null, 2));
-    
-    return { success: true, connections: merged };
   }));
 }
 

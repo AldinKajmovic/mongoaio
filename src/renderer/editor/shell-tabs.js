@@ -1,10 +1,12 @@
 import { escapeHtml } from '../utils/dom.js';
 import { confirmToast } from '../utils/ui.js';
 import { hideShellPanel } from './shell.js';
+import { renderResultItem, renderEmptyResults } from './shell-renderer.js';
 
 let tabs = [];      // { id, label, text, results[], context }
 let activeTabId = null;
 let nextId = 1;
+let nextResultId = 1;
 
 const tabBarEl = () => document.getElementById('shell-tab-bar');
 
@@ -33,10 +35,19 @@ export function addTab() {
   return tab;
 }
 
+/** Release any live shell cursors held by a tab's results. */
+function releaseTabCursors(tab) {
+  if (!tab) return;
+  tab.results.forEach(r => {
+    if (r.meta?.cursorId) window.api.shellCursorClose(r.meta.cursorId);
+  });
+}
+
 export function closeTab(id) {
   // Last tab — confirm and exit shell entirely
   if (tabs.length <= 1) {
     confirmToast('Are you sure you want to exit the shell?', () => {
+      tabs.forEach(releaseTabCursors);
       tabs = [];
       activeTabId = null;
       nextId = 1;
@@ -49,6 +60,7 @@ export function closeTab(id) {
 
   const idx = tabs.findIndex(t => t.id === id);
   if (idx === -1) return;
+  releaseTabCursors(tabs[idx]);
   tabs.splice(idx, 1);
 
   if (activeTabId === id) {
@@ -85,35 +97,47 @@ function restoreTabState() {
   const resultsEl = document.getElementById('editor-shell-results');
   if (resultsEl) {
     if (tab.results.length === 0) {
-      resultsEl.innerHTML = '<div class="u-p-16 u-text-muted u-italic">No results yet.</div>';
+      renderEmptyResults(resultsEl);
     } else {
-      resultsEl.innerHTML = tab.results.map(r => buildResultHtml(r)).join('');
+      resultsEl.innerHTML = '';
+      // Newest first (results are unshifted, so iterate in order).
+      tab.results.forEach(r => resultsEl.appendChild(renderResultItem(r)));
     }
   }
-}
-
-function buildResultHtml(r) {
-  const displayContent = typeof r.content === 'object'
-    ? JSON.stringify(r.content, null, 2) : String(r.content);
-  const countInfo = r.meta?.total !== undefined
-    ? `<span class="u-text-muted">(${r.meta.total} docs)</span>` : '';
-  return `
-    <div class="shell-result-item">
-      <div class="shell-result-header">
-        <div class="shell-result-query">${escapeHtml(r.query)} ${countInfo}</div>
-        <div class="shell-result-time">${r.time}</div>
-      </div>
-      <div class="shell-result-content ${r.type === 'error' ? 'u-text-error' : ''}">${escapeHtml(displayContent)}</div>
-    </div>`;
 }
 
 // --- Persist a result into the active tab ---
 
 export function pushResult(query, content, type, meta) {
   const tab = getActiveTab();
-  if (!tab) return;
+  if (!tab) return null;
   const time = new Date().toLocaleTimeString();
-  tab.results.unshift({ query, content, type, meta, time });
+  const result = {
+    id: `res-${nextResultId++}`,
+    query, content, type,
+    meta: meta || {},
+    time,
+    view: 'table', // 'table' | 'json' (only meaningful for array results)
+    page: 1,
+  };
+  tab.results.unshift(result);
+  return result;
+}
+
+/** Find a result by id within the active tab. */
+export function findResult(id) {
+  const tab = getActiveTab();
+  if (!tab) return null;
+  return tab.results.find(r => r.id === id) || null;
+}
+
+/** Remove a result by id from the active tab. Returns remaining count. */
+export function removeResult(id) {
+  const tab = getActiveTab();
+  if (!tab) return 0;
+  const idx = tab.results.findIndex(r => r.id === id);
+  if (idx !== -1) tab.results.splice(idx, 1);
+  return tab.results.length;
 }
 
 // --- Render the tab bar ---

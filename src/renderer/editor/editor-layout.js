@@ -13,6 +13,7 @@ export function initEditorShell() {
           <nav class="editor-nav">
             <button id="btn-editor-view-collections" class="btn btn-ghost btn-sm active">Collections</button>
             <button id="btn-editor-view-shell" class="btn btn-ghost btn-sm">Shell</button>
+            <button id="btn-editor-view-metrics" class="btn btn-ghost btn-sm">Performance</button>
           </nav>
         </div>
         <div class="editor-header-right">
@@ -30,9 +31,6 @@ export function initEditorShell() {
           </div>
           <div class="editor-tree" id="editor-tree">
             <div class="u-p-20 u-text-center u-text-muted u-font-small">Loading database tree...</div>
-          </div>
-          <div class="editor-sidebar-footer">
-            <button class="btn btn-ghost btn-icon btn-sm" id="btn-import-connections" title="Import connections"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
           </div>
         </aside>
 
@@ -141,7 +139,6 @@ export function initEditorShell() {
                     <div class="editor-shell-toolbar">
                       <button id="btn-shell-run-line" class="btn btn-ghost btn-sm">Run Line</button>
                       <button id="btn-shell-run-all" class="btn btn-primary btn-sm">Run All</button>
-                      <div id="shell-json-error" class="shell-error-pill u-hidden">Invalid JSON</div>
                     </div>
                     <textarea id="editor-shell-textarea" class="editor-shell-textarea" spellcheck="false" placeholder="// Write queries here...&#10;// e.g. {&quot;age&quot;: {&quot;$gt&quot;: 20}}"></textarea>
                   </div>
@@ -151,6 +148,9 @@ export function initEditorShell() {
                 </div>
               </div>
             </div>
+
+            <!-- Performance Metrics View Content -->
+            <div id="editor-view-metrics-content" class="u-hidden"></div>
           </div>
 
           <div class="editor-status-bar">

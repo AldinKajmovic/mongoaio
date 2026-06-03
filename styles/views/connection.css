@@ -94,10 +94,49 @@
   gap: 8px;
 }
 
+.conn-item {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 120px;
+}
+
 .open-editor-btn {
   flex: 1;
   min-width: 120px;
   justify-content: center;
+}
+
+.conn-item .open-editor-btn {
+  min-width: 0;
+}
+
+.conn-remove-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--accent-red, #ef4444);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.conn-item:hover .conn-remove-btn {
+  display: flex;
+}
+
+.conn-remove-btn:hover {
+  filter: brightness(1.15);
 }
 
 .connection-list-empty {

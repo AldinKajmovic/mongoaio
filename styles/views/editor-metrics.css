@@ -1,0 +1,258 @@
+/* ===========================================================================
+   Performance metrics dashboard (live serverStatus view)
+   =========================================================================== */
+
+#editor-view-metrics-content {
+  height: 100%;
+  overflow: auto;
+}
+
+.metrics-dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.metrics-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.metrics-pause {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 92px;
+  justify-content: center;
+}
+
+.metrics-pause-icon {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--accent-amber);
+}
+
+.metrics-pause.metrics-paused .metrics-pause-icon {
+  color: var(--accent-green);
+}
+
+.metrics-clock {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  min-width: 92px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.metrics-host {
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 20px;
+  flex: 1 1 auto;
+  align-content: start;
+}
+
+.metrics-col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+.metrics-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.metrics-card-grow {
+  flex: 1 1 auto;
+}
+
+.metrics-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+/* --- Charts --------------------------------------------------------------- */
+
+.metrics-chart-wrap {
+  position: relative;
+  height: 110px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.metrics-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.metrics-chart-max {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.metrics-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 8px;
+}
+
+.metrics-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.metrics-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+/* Swatch colors live here (not as inline `style=`) so they survive the
+   style-src 'self' CSP. Keys map from the series color in metrics-dom.js. */
+.metrics-swatch--green { background: #10b981; }
+.metrics-swatch--cyan { background: #06b6d4; }
+.metrics-swatch--blue { background: #3b82f6; }
+.metrics-swatch--red { background: #ef4444; }
+.metrics-swatch--purple { background: #a855f7; }
+.metrics-swatch--amber { background: #f59e0b; }
+
+.metrics-legend-label {
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.metrics-legend-val {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* --- Lists (hottest collections / slowest operations) -------------------- */
+
+.metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metrics-list-row {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.metrics-list-empty {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+  padding: 10px 2px;
+}
+
+.metrics-hot-row {
+  gap: 10px;
+  position: relative;
+}
+
+.metrics-hot-ns {
+  flex: 1 1 auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metrics-hot-pct {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.metrics-hot-tag {
+  position: absolute;
+  bottom: 2px;
+  left: 14px;
+  font-size: 9px;
+  text-transform: lowercase;
+  color: var(--text-muted);
+}
+
+.metrics-slow-row {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.metrics-slow-op {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  max-width: 70%;
+  overflow: hidden;
+}
+
+.metrics-slow-ns {
+  font-weight: 400;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metrics-slow-ms {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.metrics-slow-none .metrics-slow-op,
+.metrics-slow-none .metrics-slow-ms {
+  color: var(--text-muted);
+}

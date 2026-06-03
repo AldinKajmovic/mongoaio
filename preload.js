@@ -26,9 +26,11 @@ contextBridge.exposeInMainWorld('api', {
   createCollection: (side, dbName, collName, options) => ipcRenderer.invoke('create-collection', side, dbName, collName, options),
   renameField: (side, dbName, collName, oldName, newName) => ipcRenderer.invoke('rename-field', side, dbName, collName, oldName, newName),
   deleteDocuments: (side, dbName, collName, query) => ipcRenderer.invoke('delete-documents', side, dbName, collName, query),
-  shellExecute: (side, dbName, collName, method, params) => ipcRenderer.invoke('shell-execute', side, dbName, collName, method, params),
+  shellEval: (side, dbName, code, options) => ipcRenderer.invoke('shell-eval', side, dbName, code, options),
+  shellCursorNext: (cursorId) => ipcRenderer.invoke('shell-cursor-next', cursorId),
+  shellCursorClose: (cursorId) => ipcRenderer.invoke('shell-cursor-close', cursorId),
+  serverMetrics: (side) => ipcRenderer.invoke('server-metrics', side),
   executeQuery: (side, dbName, collName, options) => ipcRenderer.invoke('execute-query', side, dbName, collName, options),
-  importConnections: () => ipcRenderer.invoke('import-connections'),
 
   // Auto-updater
   getVersion: () => ipcRenderer.invoke('get-version'),
