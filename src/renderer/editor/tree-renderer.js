@@ -2,6 +2,56 @@ import { savedConnections } from '../utils/connections.js';
 import { escapeHtml } from '../utils/dom.js';
 import { editorConnectedAliases } from './tree-data.js';
 
+/**
+ * Filter the already-rendered editor tree by collection (and database) name.
+ * Operates on the live DOM so lazily-loaded databases/collections are preserved.
+ * Connections and databases stay visible only when they contain a match (or
+ * match by name themselves); matching databases auto-expand to reveal hits.
+ */
+export function filterEditorTree(searchQuery) {
+  const tree = document.getElementById('editor-tree');
+  if (!tree) return;
+
+  const q = (searchQuery || '').toLowerCase().trim();
+
+  if (!q) {
+    tree.querySelectorAll('.tree-node').forEach(n => { n.style.display = ''; });
+    return;
+  }
+
+  tree.querySelectorAll('.tree-connection').forEach(conn => {
+    const dbNodes = conn.querySelectorAll('.tree-database');
+    // Not connected/loaded yet — can't filter its collections, so leave visible.
+    if (dbNodes.length === 0) { conn.style.display = ''; return; }
+
+    let connHasMatch = false;
+
+    dbNodes.forEach(db => {
+      const dbLabel = (db.querySelector('.tree-node-header .tree-node-label')?.textContent || '').toLowerCase();
+      const collNodes = db.querySelectorAll('.tree-collection');
+      let dbHasMatch = false;
+
+      collNodes.forEach(coll => {
+        const collLabel = (coll.querySelector('.tree-node-label')?.textContent || '').toLowerCase();
+        const match = collLabel.includes(q);
+        coll.style.display = match ? '' : 'none';
+        if (match) dbHasMatch = true;
+      });
+
+      // Database not expanded/loaded — keep visible if its own name matches.
+      const dbMatch = collNodes.length === 0
+        ? dbLabel.includes(q)
+        : (dbHasMatch || dbLabel.includes(q));
+      db.style.display = dbMatch ? '' : 'none';
+      if (dbHasMatch) db.classList.add('expanded');
+      if (dbMatch) connHasMatch = true;
+    });
+
+    conn.style.display = connHasMatch ? '' : 'none';
+    if (connHasMatch) conn.classList.add('expanded');
+  });
+}
+
 export function renderEditorTree(searchQuery) {
   const tree = document.getElementById('editor-tree');
   if (!tree) return;

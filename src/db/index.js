@@ -2,10 +2,20 @@ const connection = require('./connection');
 const operations = require('./operations');
 const comparison = require('./comparison');
 const query = require('./query');
+const shell = require('./shell');
+const metrics = require('./metrics');
 const constants = require('./constants');
 
 module.exports = {
   ...constants,
+
+  // shell
+  evaluateShell: shell.evaluateShell,
+  shellCursorNext: shell.shellCursorNext,
+  closeShellCursor: shell.closeShellCursor,
+
+  // metrics
+  getServerMetrics: metrics.getServerMetrics,
 
   // connection
   connectBoth: connection.connectBoth,

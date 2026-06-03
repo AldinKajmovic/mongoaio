@@ -9,7 +9,15 @@ const CONNECTION_TIMEOUT_MS = 10000;
 /** @type {number} Default document limit for queries and comparisons */
 const DEFAULT_QUERY_LIMIT = 10;
 
+/** @type {number} Max documents returned from a shell cursor before truncation */
+const SHELL_RESULT_LIMIT = 1000;
+
+/** @type {number} Documents fetched per page for server-paginated shell finds */
+const SHELL_PAGE_SIZE = 10;
+
 module.exports = {
   CONNECTION_TIMEOUT_MS,
   DEFAULT_QUERY_LIMIT,
+  SHELL_RESULT_LIMIT,
+  SHELL_PAGE_SIZE,
 };

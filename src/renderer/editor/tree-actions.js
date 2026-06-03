@@ -3,6 +3,7 @@ import { toast, showLoading, hideLoading } from '../utils/ui.js';
 import { openAddDatabaseModal } from '../modals/add-database.js';
 import { openAddCollectionModal } from '../modals/add-collection.js';
 import { updateShellContext, hideShellPanel } from './shell.js';
+import { showMetricsPanel } from './metrics.js';
 import { renderEditorTree } from './tree-renderer.js';
 import { clearEditorResults } from './query.js';
 import { savedConnections } from '../utils/connections.js';
@@ -10,7 +11,7 @@ import { editorConnectAlias, editorConnectedAliases } from './tree-data.js';
 
 // Re-export clipboard actions so tree-handlers can import from one place
 export {
-  copyAllCollections, exportCollections,
+  copyAllCollections,
   pasteCollections, pasteIntoNewDatabase,
 } from './tree-clipboard.js';
 
@@ -24,6 +25,18 @@ export function openShell(alias, db, coll) {
   if (coll) state.editor.coll = coll;
   updateShellContext();
   if (elements.btnEditorViewShell) elements.btnEditorViewShell.click();
+}
+
+/**
+ * Open the live performance dashboard for the given connection.
+ */
+export async function openMetrics(alias) {
+  if (alias) {
+    await ensureActive(alias);
+    state.editor.alias = alias;
+  }
+  updateShellContext();
+  showMetricsPanel();
 }
 
 /**

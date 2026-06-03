@@ -4,9 +4,10 @@
 
 import { state, elements, $ } from './state.js';
 import { showLoading, hideLoading, toast, setStatus, showView } from './ui.js';
-import { shortUrl } from './dom.js';
+import { shortUrl, escapeHtml } from './dom.js';
 import { initEditorResizables } from '../editor/resize.js';
 import { loadEditorTree } from '../editor/tree.js';
+import { confirmDialog } from '../modals/base.js';
 
 export let savedConnections = {};
 
@@ -26,11 +27,36 @@ export function populateConnectionList() {
     return;
   }
 
-  list.innerHTML = aliases.map(alias => `
-    <button class="btn btn-secondary btn-sm open-editor-btn" data-alias="${alias}">
-      ${alias}
-    </button>
-  `).join('');
+  // SECURITY: escapeHtml on alias prevents XSS from crafted connection names
+  list.innerHTML = aliases.map(alias => {
+    const safeAlias = escapeHtml(alias);
+    return `
+    <div class="conn-item" data-alias="${safeAlias}">
+      <button class="btn btn-secondary btn-sm open-editor-btn" data-alias="${safeAlias}">
+        ${safeAlias}
+      </button>
+      <button class="conn-remove-btn" data-remove-alias="${safeAlias}" title="Remove connection" aria-label="Remove ${safeAlias}">&times;</button>
+    </div>
+  `;
+  }).join('');
+}
+
+async function removeConnection(alias) {
+  const confirmed = await confirmDialog('Are you really sure?', `Remove saved connection "${alias}"?`);
+  if (!confirmed) return;
+
+  // safeHandler returns { error } on failure — don't let that replace the
+  // connections map (it would render a bogus "error" entry in the list).
+  const res = await window.api.deleteConnection(alias);
+  if (res && res.error) {
+    toast(`Failed to remove connection: ${res.error}`, 'error');
+    return;
+  }
+
+  savedConnections = res;
+  updateAliasDropdowns();
+  populateConnectionList();
+  toast('Connection removed', 'success');
 }
 
 export async function openDbEditorWith(alias) {
@@ -116,6 +142,11 @@ if (elements.btnSaveConn) {
 
 if (elements.connectionPanel) {
   elements.connectionPanel.addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('.conn-remove-btn');
+    if (removeBtn && removeBtn.dataset.removeAlias) {
+      removeConnection(removeBtn.dataset.removeAlias);
+      return;
+    }
     const btn = e.target.closest('.open-editor-btn');
     if (btn && btn.dataset.alias) {
       openDbEditorWith(btn.dataset.alias);

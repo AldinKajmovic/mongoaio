@@ -27,8 +27,10 @@ import './editor/query.js';
 import './editor/inline-edit.js';
 import './editor/search.js';
 import { initEditorShellLogic } from './editor/shell.js';
+import { initMetricsView } from './editor/metrics.js';
 import './editor/resize.js';
 import { initUpdater } from './utils/updater.js';
 
 initEditorShellLogic();
+initMetricsView();
 initUpdater();

@@ -66,10 +66,25 @@ This launches the Electron app. You will see the connection panel where you can 
 
 ### Shell
 
-1. Open the shell tab within the DB editor
-2. Write a JSON filter (e.g. `{"status": "active"}`) or a mongosh-style command (e.g. `db.users.find({"age": 30})`)
-3. Press **Enter** to execute; results appear below
-4. Use the **+** button to open multiple shell tabs
+The shell evaluates real mongosh-style JavaScript against the live driver, so the
+**full MongoDB operation surface** is available — not just a fixed list of commands.
+
+1. Open the shell tab within the DB editor (a database must be selected in the tree)
+2. Write any mongosh command, for example:
+   - **CRUD:** `db.users.insertOne({...})`, `db.users.updateMany({...}, {$set:{...}})`, `db.users.deleteMany({...})`
+   - **Reads with chaining:** `db.users.find({age:{$gte:30}}).sort({age:-1}).limit(20)`
+   - **Aggregation pipelines:** `db.orders.aggregate([{$match:{...}}, {$group:{_id:"$status", n:{$sum:1}}}])`
+   - **Indexes / bulk / findAndModify:** `db.users.createIndex({email:1})`, `db.users.bulkWrite([...])`, `db.users.findOneAndUpdate(...)`
+   - **DB-level:** `db.getCollectionNames()`, `db.runCommand({...})`, `db.stats()`, `db.getSiblingDB("other").users.find()`
+   - **mongosh helpers:** `ObjectId(...)`, `ISODate(...)`, `NumberLong(...)`, `NumberDecimal(...)`, `UUID(...)`
+   - **Legacy aliases:** `insert`, `update`, `remove`, `save`, `count`, `getIndexes`, `findAndModify`
+   - A bare JSON filter (e.g. `{"status":"active"}`) runs as a `find()` on the selected collection
+3. Press **Enter** to execute (Shift+Enter for a newline); results appear below
+4. Array results render as a **paginated table** (10 docs/page) — toggle to **JSON** with the button on each result
+5. Each result has a **×** button to remove it; use the **+** in the tab bar for multiple shell tabs
+
+> Result sets are capped at 1000 documents per command for performance; cursors are
+> auto-iterated. Use `await` only when you need an intermediate async value in a multi-statement block.
 
 ---
 
@@ -104,7 +119,7 @@ comparedb/
 
 ## Versioning & Updates
 
-Versioning and an auto-update mechanism are coming soon. Stay tuned for release tags and a changelog.
+When opening application, it will check for updates and notify you if there is a new version available.
 
 ---
 

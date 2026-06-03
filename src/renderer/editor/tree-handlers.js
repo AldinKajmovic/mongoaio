@@ -131,10 +131,10 @@ export function setupTreeHandlers(selectCollectionFn, toggleNodeFn) {
       const hasClipboard = getClipboard().length > 0;
 
       items.push({ label: 'Open Shell', action: () => actions.openShell(alias, db) });
+      items.push({ label: 'View Performance Metrics', action: () => actions.openMetrics(alias) });
       items.push({ separator: true });
       items.push({ label: 'Copy Database', action: () => actions.copyDatabase(alias, db) });
       items.push({ label: 'Copy all collections', action: () => actions.copyAllCollections(alias, db) });
-      items.push({ label: 'Export collections', action: () => actions.exportCollections(alias, db) });
       items.push({ separator: true });
       items.push({ label: 'Drop Database', action: () => actions.dropDatabase(alias, db) });
       items.push({ label: 'Add Collection', action: () => actions.addCollection(alias, db) });
@@ -151,6 +151,8 @@ export function setupTreeHandlers(selectCollectionFn, toggleNodeFn) {
       const hasClipboard = getClipboard().length > 0;
 
       items.push({ label: 'Open Collection', action: () => selectCollectionFn(header, alias, db, coll) });
+      items.push({ label: 'Open MongoDB Shell', action: () => actions.openShell(alias, db, coll) });
+      items.push({ label: 'View Performance Metrics', action: () => actions.openMetrics(alias) });
       items.push({ separator: true });
       items.push({
         label: `Copy${taggedList.length > 1 ? ` (${taggedList.length})` : ''}`,

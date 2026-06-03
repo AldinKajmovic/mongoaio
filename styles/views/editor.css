@@ -258,20 +258,6 @@
   gap: 8px;
 }
 
-.editor-sidebar-footer {
-  padding: 8px;
-  border-top: 1px solid var(--border);
-  background: rgba(10, 10, 15, 0.8);
-}
-
-.editor-sidebar-footer-label {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 600;
-  display: block;
-  margin-bottom: 4px;
-}
-
 .editor-sidebar-actions {
   display: flex;
   gap: 4px;
