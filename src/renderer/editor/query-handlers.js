@@ -2,9 +2,8 @@ import { state } from '../utils/state.js';
 import {
   currentRenderedItems, expandedDocs, runEditorQuery, openEditorEditModal
 } from './query.js';
-import {
-  startInlineEdit, startHeaderEdit, startJsonInlineEdit
-} from './inline-edit.js';
+import { startInlineEdit, startHeaderEdit } from './inline-edit.js';
+import { startJsonInlineEdit } from './json-edit.js';
 import { openDeleteDocsModal } from '../modals/delete-docs.js';
 import { copyToClipboard } from '../utils/dom.js';
 import { initQueryBuilder } from './query-builder.js';

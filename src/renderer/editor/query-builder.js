@@ -6,6 +6,12 @@ import { openModal } from '../modals/base.js';
 let qbItems = []; // Array of { id, field, value, type, op, enabled }
 let nextId = 1;
 
+/** Wrap a value as MongoDB Extended JSON ObjectId so the backend revives it. */
+const toOid = (v) => ({ $oid: String(v) });
+
+/** Parse a value into an array, accepting an existing array or a JSON string. */
+const parseMaybeArray = (v) => (Array.isArray(v) ? v : JSON.parse(v));
+
 /**
  * Add a field to the query builder.
  * @param {string} fieldName
@@ -175,14 +181,23 @@ function buildAndApplyFilter() {
     if (it.type === 'Int32') val = parseInt(val, 10);
     else if (it.type === 'Double') val = parseFloat(val);
     else if (it.type === 'Boolean') val = val === 'true';
-    
+
+    // ObjectId values are emitted as Extended JSON ({$oid}) so the backend
+    // matches them as real ObjectIds rather than strings.
+    const isOid = it.type === 'ObjectId';
+    const eq = (v) => (isOid ? toOid(v) : v);
+    const eqArray = (v) => {
+      const arr = parseMaybeArray(v);
+      return isOid ? arr.map(toOid) : arr;
+    };
+
     let cond;
     const key = it.field;
-    
+
     // Mapping operators to MongoDB query syntax
     switch (it.op) {
-      case 'equals': cond = { [key]: val }; break;
-      case 'not_equals': cond = { [key]: { $ne: val } }; break;
+      case 'equals': cond = { [key]: eq(val) }; break;
+      case 'not_equals': cond = { [key]: { $ne: eq(val) } }; break;
       case 'contains': cond = { [key]: { $regex: val, $options: 'i' } }; break;
       case 'not_contains': cond = { [key]: { $not: { $regex: val, $options: 'i' } } }; break;
       case 'starts_with': cond = { [key]: { $regex: '^' + val, $options: 'i' } }; break;
@@ -193,21 +208,21 @@ function buildAndApplyFilter() {
       case 'is_not_null': cond = { [key]: { $ne: null } }; break;
       case 'exists': cond = { [key]: { $exists: true } }; break;
       case 'not_exists': cond = { [key]: { $exists: false } }; break;
-      case 'in': 
-        try { cond = { [key]: { $in: Array.isArray(val) ? val : JSON.parse(val) } }; } 
-        catch { cond = { [key]: { $in: [val] } }; }
+      case 'in':
+        try { cond = { [key]: { $in: eqArray(val) } }; }
+        catch { cond = { [key]: { $in: [eq(val)] } }; }
         break;
       case 'not_in':
-        try { cond = { [key]: { $nin: Array.isArray(val) ? val : JSON.parse(val) } }; } 
-        catch { cond = { [key]: { $nin: [val] } }; }
+        try { cond = { [key]: { $nin: eqArray(val) } }; }
+        catch { cond = { [key]: { $nin: [eq(val)] } }; }
         break;
       case 'all':
-        try { cond = { [key]: { $all: Array.isArray(val) ? val : JSON.parse(val) } }; } 
-        catch { cond = { [key]: { $all: [val] } }; }
+        try { cond = { [key]: { $all: eqArray(val) } }; }
+        catch { cond = { [key]: { $all: [eq(val)] } }; }
         break;
-      default: cond = { [key]: val };
+      default: cond = { [key]: eq(val) };
     }
-    
+
     return cond;
   });
 

@@ -167,6 +167,32 @@ if (elements.btnEditorNext) elements.btnEditorNext.onclick = () => changePage('n
 if (elements.btnEditorLast) elements.btnEditorLast.onclick = () => changePage('last');
 if (elements.btnEditorRefresh) elements.btnEditorRefresh.onclick = () => runEditorQuery();
 
+/**
+ * Point the sort field(s) in the desired direction and re-run the query.
+ * Uses the field(s) already in the sort box, else the selected field, else _id.
+ * @param {1|-1} direction
+ */
+const applySortDirection = (direction) => {
+  let sort = {};
+  try { sort = parseRelaxedJSON(elements.editorQuerySort.value.trim() || '{}'); } catch (_) { sort = {}; }
+
+  const keys = Object.keys(sort);
+  if (keys.length > 0) {
+    for (const k of keys) sort[k] = direction;
+  } else if (state.editor.selectedField?.key) {
+    sort = { [state.editor.selectedField.key]: direction };
+  } else {
+    sort = { _id: direction };
+  }
+
+  elements.editorQuerySort.value = JSON.stringify(sort);
+  elements.editorQuerySkip.value = 0;
+  runEditorQuery();
+};
+
+if (elements.btnEditorSortAsc) elements.btnEditorSortAsc.onclick = () => applySortDirection(1);
+if (elements.btnEditorSortDesc) elements.btnEditorSortDesc.onclick = () => applySortDirection(-1);
+
 if (elements.editorPageSizeSelect) {
   elements.editorPageSizeSelect.onchange = (e) => {
     elements.editorQueryLimit.value = e.target.value;

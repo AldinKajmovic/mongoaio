@@ -31,8 +31,26 @@ export function valueSummary(val) {
 }
 
 /**
+ * Check whether a search query matches anywhere within a value's subtree
+ * (any nested key or value). Used to decide which branches to auto-expand
+ * when searching. `sq` is expected to be already lower-cased.
+ */
+export function subtreeMatchesSearch(val, sq) {
+  if (!sq) return false;
+  try {
+    return JSON.stringify(val).toLowerCase().includes(sq);
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
  * Render nested children for an expandable field value.
  * Returns HTML string of field rows at the given depth.
+ *
+ * When a search query (`sq`) is active, any branch whose subtree contains a
+ * match is rendered eagerly and marked expanded, so the match is visible in
+ * the DOM without the user having to manually open each level.
  */
 export function renderNestedChildren(val, docIndex, depth, sq) {
   if (!isExpandable(val)) return '';
@@ -51,8 +69,12 @@ export function renderNestedChildren(val, docIndex, depth, sq) {
     const keyHtml = sq ? highlightText(key, sq) : escapeHtml(key);
     const valHtml = sq ? highlightText(valStr, sq) : escapeHtml(valStr);
 
+    // Auto-expand this branch when searching and a match lies within it.
+    const autoExpand = expandable && !!sq && subtreeMatchesSearch(childVal, sq);
+    const childrenHtml = autoExpand ? renderNestedChildren(childVal, docIndex, depth + 1, sq) : '';
+
     return `
-      <div class="editor-field-row${expandable ? ' nested-expandable' : ''}" draggable="true"
+      <div class="editor-field-row${expandable ? ' nested-expandable' : ''}${autoExpand ? ' nested-expanded' : ''}" draggable="true"
            data-index="${docIndex}" data-key="${escapeHtml(key)}"
            data-field="${escapeHtml(key)}" data-type="${type}"
            data-value='${escapeHtml(JSON.stringify(childVal))}' data-depth="${depth}">
@@ -66,7 +88,7 @@ export function renderNestedChildren(val, docIndex, depth, sq) {
               data-type="value">${valHtml}</span>
         <span class="editor-field-type u-text-muted u-font-xs u-ml-8">${type}</span>
       </div>
-      ${expandable ? '<div class="editor-nested-children"></div>' : ''}`;
+      ${expandable ? `<div class="editor-nested-children"${autoExpand ? ' data-rendered="true"' : ''}>${childrenHtml}</div>` : ''}`;
   }).join('');
 }
 
@@ -95,7 +117,7 @@ export function toggleNestedField(fieldRow, sq) {
 /**
  * Apply indentation to nested field rows based on data-depth
  */
-function applyDepthIndent(container) {
+export function applyDepthIndent(container) {
   container.querySelectorAll('.editor-field-row').forEach(row => {
     const d = parseInt(row.dataset.depth, 10) || 0;
     row.style.paddingLeft = `${28 + d * 16}px`;

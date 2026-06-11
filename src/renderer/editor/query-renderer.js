@@ -1,6 +1,6 @@
 import { escapeHtml, highlightText } from '../utils/dom.js';
 import { syncTreeRowColumns, setupTableColumnResize } from './resize.js';
-import { getFieldType, isExpandable, valueSummary } from './value-viewer.js';
+import { getFieldType, isExpandable, renderNestedChildren, applyDepthIndent } from './value-viewer.js';
 
 export function renderJsonView(items, sq) {
   const jsonView = document.getElementById('editor-data-json');
@@ -52,29 +52,14 @@ export function renderTreeView(items, sq, expandedDocs) {
           </div>
         </div>
         <div class="editor-doc-children">
-          ${Object.entries(doc).map(([key, val]) => {
-        const type = getFieldType(key, val);
-        const expandable = isExpandable(val);
-        const valStr = expandable ? valueSummary(val) : (val === null ? 'null' : String(val));
-        const keyHtml = sq ? highlightText(key, sq) : escapeHtml(key);
-        const valHtml = sq ? highlightText(valStr, sq) : escapeHtml(valStr);
-        return `
-            <div class="editor-field-row${expandable ? ' nested-expandable' : ''}" draggable="true"
-                 data-index="${i}" data-key="${escapeHtml(key)}" data-field="${escapeHtml(key)}"
-                 data-type="${type}" data-value='${escapeHtml(JSON.stringify(val))}' data-depth="0">
-              <span class="editor-field-indent">
-                ${expandable ? '<span class="tree-arrow nested-arrow">&#9654;</span>' : ''}
-              </span>
-              <span class="editor-field-key" data-index="${i}" data-key="${escapeHtml(key)}" data-type="key">${keyHtml}</span>
-              <span class="editor-field-value${expandable ? ' nested-summary' : ''}" data-index="${i}" data-key="${escapeHtml(key)}" data-type="value">${valHtml}</span>
-              <span class="editor-field-type u-text-muted u-font-xs u-ml-8">${type}</span>
-            </div>
-            ${expandable ? '<div class="editor-nested-children"></div>' : ''}`;
-      }).join('')}
+          ${renderNestedChildren(doc, i, 0, sq)}
         </div>
       </div>
     `}).join('');
   }
+  // When searching, branches are rendered eagerly — apply depth-based
+  // indentation so auto-expanded nested rows align correctly.
+  if (sq) applyDepthIndent(treeRows);
   const header = document.getElementById('editor-tree-header');
   if (header) syncTreeRowColumns(header.style.gridTemplateColumns);
 }

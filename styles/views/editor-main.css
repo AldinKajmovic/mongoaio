@@ -100,9 +100,16 @@
   border-radius: 2px;
 }
 
-.editor-json-inline-textarea {
+.editor-json-edit-wrapper {
+  position: relative;
   width: 100%;
-  background: var(--bg-input);
+}
+
+.editor-json-inline-textarea {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background: transparent;
   border: 1px solid var(--accent-purple);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
@@ -113,6 +120,40 @@
   outline: none;
   line-height: 1.6;
   min-height: 100px;
+}
+
+/* Mirror layer behind the textarea: paints search matches as <mark>
+   backgrounds (a textarea's own selection is invisible while it is blurred,
+   i.e. while focus sits in the find bar). Box metrics must match the textarea
+   exactly so the highlighted text aligns with the visible text on top. */
+.editor-json-edit-highlights {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: transparent;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.editor-json-edit-highlights mark {
+  color: transparent;
+}
+
+/* Keep the focused-textarea selection consistent with the backdrop colour. */
+.editor-json-inline-textarea::selection {
+  background: rgba(255, 165, 0, 0.85);
+  color: #000;
 }
 
 .editor-field-row:hover, .editor-table-row:hover {

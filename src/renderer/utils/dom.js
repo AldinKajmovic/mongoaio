@@ -13,6 +13,10 @@ export function debounce(fn, delay) {
 /**
  * Parse relaxed JSON that allows unquoted keys (MongoDB shell style).
  * e.g. {polNum: "value", $gt: 5} -> {"polNum": "value", "$gt": 5}
+ *
+ * ObjectId("...") is preserved as Extended JSON ({"$oid":"..."}) so the
+ * backend can query it as a real ObjectId rather than a plain string. The
+ * id is captured verbatim; validity is enforced by the backend.
  */
 export function parseRelaxedJSON(str) {
   try {
@@ -23,7 +27,7 @@ export function parseRelaxedJSON(str) {
       .replace(/NumberInt\((\d+)\)/g, '$1')
       .replace(/NumberLong\((\d+)\)/g, '$1')
       .replace(/Double\(([\d.]+)\)/g, '$1')
-      .replace(/ObjectId\(['"]([0-9a-fA-F]{24})['"]\)/g, '"$1"')
+      .replace(/ObjectId\(\s*['"]([^'"]*)['"]\s*\)/g, '{"$oid":"$1"}')
       .replace(/ISODate\(['"](.+?)['"]\)/g, '"$1"')
       .replace(/new Date\(['"](.+?)['"]\)/g, '"$1"')
       .replace(/Date\(['"](.+?)['"]\)/g, '"$1"');
