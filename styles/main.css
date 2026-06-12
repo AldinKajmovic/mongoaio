@@ -19,6 +19,7 @@
 @import url('./views/comparison.css');
 @import url('./views/documents.css');
 @import url('./views/documents-diff.css');
+@import url('./views/json-tree.css');
 @import url('./views/editor.css');
 @import url('./views/editor-main.css');
 @import url('./views/editor-query.css');

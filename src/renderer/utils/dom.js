@@ -40,14 +40,39 @@ export function parseRelaxedJSON(str) {
 }
 
 /**
- * Get nested value from object using dot notation
+ * Get nested value from object using dot notation. Returns undefined if the
+ * path touches an unsafe prototype key (see UNSAFE_KEYS).
  */
 export function getNestedValue(obj, path) {
   try {
-    return path.split('.').reduce((acc, part) => (acc && acc[part] !== undefined) ? acc[part] : undefined, obj);
+    const parts = path.split('.');
+    if (parts.some(p => UNSAFE_KEYS.has(p))) return undefined;
+    return parts.reduce((acc, part) => (acc && acc[part] !== undefined) ? acc[part] : undefined, obj);
   } catch (e) {
     return undefined;
   }
+}
+
+// SECURITY: Document field names are untrusted (a compared DB could contain a
+// key literally named `__proto__`/`constructor`/`prototype`). Reject any path
+// touching these so nested writes can't pollute Object.prototype.
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/**
+ * Set a nested value using dot notation, creating intermediate objects as
+ * needed. Array indices work because arrays accept string keys (e.g. arr['4']).
+ * No-ops if any path segment is an unsafe prototype key.
+ */
+export function setNestedValue(obj, path, value) {
+  const parts = path.split('.');
+  if (parts.some(p => UNSAFE_KEYS.has(p))) return;
+  const last = parts.pop();
+  let cur = obj;
+  for (const part of parts) {
+    if (cur[part] === null || typeof cur[part] !== 'object') cur[part] = {};
+    cur = cur[part];
+  }
+  cur[last] = value;
 }
 
 export function shortUrl(url) {

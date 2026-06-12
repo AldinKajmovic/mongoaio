@@ -3,6 +3,7 @@ import { showLoading, hideLoading, toast } from '../utils/ui.js';
 import { debounce, emptyState } from '../utils/dom.js';
 import { copyDoc, deleteDoc, startEditField } from './document-crud.js';
 import { renderDocTabDifferent, renderDocTabUnique } from './document-item-renderer.js';
+import { revealFieldValue } from '../utils/json-tree.js';
 
 export async function loadDocuments(sourceDbName, targetDbName, collName) {
   const tabMap = {
@@ -163,6 +164,30 @@ function toggleField(element) {
 
 // Global Event Delegation for Document View
 elements.docContent.addEventListener('click', (e) => {
+  // 0z. A sync checkbox (incl. nested ones in the tree) toggles natively —
+  // don't let the click also collapse the tree node it sits in.
+  if (e.target.closest('.field-sync-checkbox')) return;
+
+  // 0a. Reveal a deferred large field value (built on demand for fast load)
+  const revealBtn = e.target.closest('.reveal-field-btn');
+  if (revealBtn) {
+    e.stopPropagation();
+    revealFieldValue(revealBtn.dataset.fieldId);
+    return;
+  }
+
+  // 0. JSON tree node expand/collapse
+  const jsonToggle = e.target.closest('.jt-toggle');
+  if (jsonToggle) {
+    e.stopPropagation();
+    jsonToggle.classList.toggle('expanded');
+    const children = jsonToggle.nextElementSibling;
+    if (children && children.classList.contains('jt-children')) {
+      children.classList.toggle('collapsed');
+    }
+    return;
+  }
+
   // 1. Action Icons (Edit / Toggle)
   const toggleIcon = e.target.closest('.field-toggle-icon');
   if (toggleIcon) {
@@ -213,6 +238,9 @@ elements.docContent.addEventListener('click', (e) => {
 
 // Double click Delegation
 elements.docContent.addEventListener('dblclick', (e) => {
+  // Inside the JSON tree, leaves are edited via their own pencil — don't open
+  // the whole-field editor on a stray double-click there.
+  if (e.target.closest('.jt-node')) return;
   const container = e.target.closest('.diff-field-value');
   if (container) {
     startEditField(container.dataset.side, container.dataset.docId, container.dataset.field);

@@ -1,5 +1,6 @@
 import { state } from '../utils/state.js';
-import { formatValue, emptyState, lazyPrettyJson } from '../utils/dom.js';
+import { emptyState, lazyPrettyJson } from '../utils/dom.js';
+import { formatFieldValue } from '../utils/json-tree.js';
 
 export function renderDocTabDifferent(items, q) {
   if (items.length === 0) return emptyState('No documents to compare in this range');
@@ -27,13 +28,13 @@ export function renderDocTabDifferent(items, q) {
           </div>
           <span class="diff-field-name">${isSame ? '<span class="tag-same">SAME</span>' : ''}${d.field}</span>
           <div class="diff-field-value source-val" id="field-source-${item._id}-${d.field}" data-side="source" data-doc-id="${item._id}" data-field="${d.field}">
-            <span class="val-text ${isSame ? 'same' : 'different'}">${formatValue(d.sourceValue)}</span>
+            <span class="val-text ${isSame ? 'same' : 'different'}">${formatFieldValue(d.sourceValue, d.targetValue, !isSame, { lazyId: `fv-source-${item._id}-${d.field}`, path: d.field, docId: item._id })}</span>
             <div class="diff-field-actions">
               <span class="action-icon edit-field" title="Edit Source">✎</span>
             </div>
           </div>
           <div class="diff-field-value target-val" id="field-target-${item._id}-${d.field}" data-side="target" data-doc-id="${item._id}" data-field="${d.field}">
-            <span class="val-text ${isSame ? 'same' : 'different'}">${formatValue(d.targetValue)}</span>
+            <span class="val-text ${isSame ? 'same' : 'different'}">${formatFieldValue(d.targetValue, d.sourceValue, !isSame, { lazyId: `fv-target-${item._id}-${d.field}`, path: d.field, docId: item._id })}</span>
             <div class="diff-field-actions">
               <span class="action-icon edit-field" title="Edit Target">✎</span>
             </div>
@@ -104,7 +105,7 @@ export function renderDocTabUnique(items, side, q) {
       <div class="diff-field unique">
         <span class="diff-field-name">${f}</span>
         <div class="diff-field-value ${side}-val" id="field-${side}-${doc._id}-${f}" data-side="${side}" data-doc-id="${doc._id}" data-field="${f}">
-          <span class="val-text">${formatValue(doc[f])}</span>
+          <span class="val-text">${formatFieldValue(doc[f], undefined, false, { lazyId: `fv-${side}-${doc._id}-${f}`, path: f, docId: doc._id })}</span>
           <div class="diff-field-actions">
             <span class="action-icon edit-field" title="Edit">✎</span>
           </div>

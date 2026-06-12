@@ -1,6 +1,7 @@
 import { state, elements } from '../utils/state.js';
 import { showLoading, hideLoading, toast } from '../utils/ui.js';
-import { formatValue, getNestedValue, prettyJson } from '../utils/dom.js';
+import { getNestedValue, setNestedValue, prettyJson } from '../utils/dom.js';
+import { formatFieldValue } from '../utils/json-tree.js';
 import { confirmDialog, openModal, openSyncModal } from '../modals/base.js';
 import { loadDocuments, renderDocTab } from './document-view.js';
 
@@ -9,10 +10,13 @@ export function resolveDb(side) {
 }
 
 export async function copyDoc(fromSide, toSide, docId) {
-  const initiallySelected = [];
+  // The same path can be checked on either side (source and target trees each
+  // carry a checkbox), so dedupe to a unique set of paths.
+  const selectedPaths = new Set();
   document.querySelectorAll(`.field-sync-checkbox[data-doc-id="${docId}"]:checked`).forEach(cb => {
-    initiallySelected.push(cb.dataset.field);
+    selectedPaths.add(cb.dataset.field);
   });
+  const initiallySelected = [...selectedPaths];
 
   // Find doc data
   const docItem = state.docComparison.items.find(d => d._id === docId);
@@ -23,13 +27,20 @@ export async function copyDoc(fromSide, toSide, docId) {
   const targetDb = resolveDb(toSide);
 
   if (state.activeDocTab === 'different' || initiallySelected.length > 0) {
-    const fieldsToOffer = state.activeDocTab === 'different' ? docItem.diffs.filter(d => d.type !== 'same').map(d => d.field) : Object.keys(fromDoc);
+    const topLevel = state.activeDocTab === 'different' ? docItem.diffs.filter(d => d.type !== 'same').map(d => d.field) : Object.keys(fromDoc);
+    // Nested paths come only from checked tree checkboxes; surface them in the
+    // modal too so the user can review/deselect them alongside top-level fields.
+    const fieldsToOffer = [...topLevel, ...initiallySelected.filter(f => !topLevel.includes(f))];
 
     // If we're on "different" tab and nothing was selected, offer all diffs selected
     const selection = initiallySelected.length > 0 ? initiallySelected :
       (state.activeDocTab === 'different' ? fieldsToOffer : []);
 
-    openSyncModal(`Sync Fields to ${toSide}`, fieldsToOffer, fromDoc, selection, async (selectedFields) => {
+    openSyncModal(`Sync Fields to ${toSide}`, fieldsToOffer, fromDoc, selection, async (selectedRaw) => {
+      // Drop any path nested under another selected path — $set would otherwise
+      // conflict (e.g. both `idCards` and `idCards.0`).
+      const selectedFields = selectedRaw.filter(p => !selectedRaw.some(o => o !== p && p.startsWith(`${o}.`)));
+
       showLoading('Syncing fields...');
       const updates = {};
       selectedFields.forEach(f => { updates[f] = getNestedValue(fromDoc, f); });
@@ -42,25 +53,21 @@ export async function copyDoc(fromSide, toSide, docId) {
         return false;
       } else {
         toast('Fields synced successfully', 'success');
-        // Optimized: Update local state and re-render tab only
+        // Optimized: mirror the change locally (handles nested dot-paths) and
+        // re-render the tab instead of a full reload.
         if (state.activeDocTab === 'different') {
+          const destDoc = fromSide === 'source' ? docItem.target : docItem.source;
           selectedFields.forEach(f => {
-            if (fromSide === 'source') {
-              docItem.target[f] = docItem.source[f];
-            } else {
-              docItem.source[f] = docItem.target[f];
-            }
-            if (docItem.diffs) {
-              const diffEntry = docItem.diffs.find(d => d.field === f);
-              if (diffEntry) {
-                diffEntry.type = 'same';
-                diffEntry.sourceValue = docItem.source[f];
-                diffEntry.targetValue = docItem.target[f];
-              }
+            const value = getNestedValue(fromDoc, f);
+            setNestedValue(destDoc, f, value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
+            const diffEntry = docItem.diffs?.find(d => d.field === f);
+            if (diffEntry) {
+              diffEntry.type = 'same';
+              diffEntry.sourceValue = getNestedValue(docItem.source, f);
+              diffEntry.targetValue = getNestedValue(docItem.target, f);
             }
           });
         }
-        // Instead of full load, just re-render tab
         renderDocTab(state.activeDocTab);
         return true;
       }
@@ -201,7 +208,7 @@ function cancelEditField(side, docId, field) {
 
   const val = originalDoc[field];
   container.innerHTML = `
-    <span class="val-text">${formatValue(val)}</span>
+    <span class="val-text">${formatFieldValue(val, undefined, false, { path: field, docId })}</span>
     <div class="diff-field-actions">
       <span class="action-icon edit-field-btn" data-side="${side}" data-doc-id="${docId}" data-field="${field}" title="Edit">✎</span>
     </div>

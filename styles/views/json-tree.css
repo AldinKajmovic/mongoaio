@@ -1,0 +1,174 @@
+/* Large values deferred behind a reveal button to keep initial render fast */
+.lazy-field {
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+}
+
+.lazy-field .reveal-field-btn {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* Collapsible JSON tree for nested object/array field values */
+.json-tree {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  width: 100%;
+  /* Reset the parent .diff-field-value pre-wrap so template whitespace
+     between tree nodes does not render as blank lines */
+  white-space: normal;
+}
+
+.jt-node {
+  white-space: normal;
+}
+
+.jt-children {
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+  margin-left: 3px;
+}
+
+.jt-children.collapsed {
+  display: none;
+}
+
+.jt-toggle {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  border-radius: 3px;
+  padding: 1px 2px;
+}
+
+.jt-toggle:hover {
+  background: var(--bg-card-hover);
+}
+
+.jt-caret {
+  display: inline-block;
+  transition: transform 0.12s ease;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.jt-toggle.expanded > .jt-caret {
+  transform: rotate(90deg);
+}
+
+.jt-leaf {
+  padding: 1px 2px 1px 16px;
+  word-break: break-word;
+}
+
+.jt-key {
+  color: var(--accent-cyan);
+}
+
+.jt-summary {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.jt-string {
+  color: var(--accent-green);
+}
+
+.jt-number {
+  color: var(--accent-amber);
+}
+
+.jt-boolean {
+  color: var(--accent-purple);
+}
+
+.jt-null,
+.jt-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Nested nodes that differ from the opposite side */
+.jt-diff {
+  background: rgba(245, 158, 11, 0.16);
+  border-left: 3px solid var(--accent-amber);
+  border-radius: 3px;
+}
+
+.jt-toggle.jt-diff,
+.jt-leaf.jt-diff {
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.jt-toggle.jt-diff > .jt-summary {
+  color: var(--accent-amber);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.jt-toggle.jt-diff > .jt-key,
+.jt-leaf.jt-diff > .jt-key {
+  color: var(--accent-amber);
+}
+
+.jt-leaf.jt-diff {
+  font-weight: 600;
+}
+
+/* Inline leaf editing */
+.jt-edit-leaf,
+.jt-leaf-save,
+.jt-leaf-cancel {
+  cursor: pointer;
+  margin-left: 6px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  flex-shrink: 0;
+}
+
+.jt-leaf:hover .jt-edit-leaf,
+.jt-leaf.jt-editing .jt-leaf-save,
+.jt-leaf.jt-editing .jt-leaf-cancel {
+  opacity: 0.85;
+}
+
+.jt-leaf-save:hover { color: var(--accent-green); opacity: 1; }
+.jt-leaf-cancel:hover { color: var(--accent-red, #f87171); opacity: 1; }
+.jt-edit-leaf:hover { color: var(--accent-cyan); opacity: 1; }
+
+.jt-leaf-input {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  padding: 1px 4px;
+  min-width: 160px;
+  background: var(--bg-input, var(--bg-card));
+  color: var(--text-primary);
+  border: 1px solid var(--accent-cyan);
+  border-radius: 3px;
+}
+
+/* Nested sync checkbox — present on differing nodes in both trees, so they
+   stay aligned and a path can be selected from whichever side you're reading. */
+.jt-sync {
+  display: inline-block;
+  width: 13px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.jt-leaf.jt-diff .jt-string,
+.jt-leaf.jt-diff .jt-number,
+.jt-leaf.jt-diff .jt-boolean,
+.jt-leaf.jt-diff .jt-value,
+.jt-leaf.jt-diff .jt-null,
+.jt-leaf.jt-diff .jt-empty {
+  color: var(--accent-amber);
+}

@@ -20,6 +20,7 @@ import './components/database-view.js';
 import './components/collection-view.js';
 import './components/document-view.js';
 import './components/document-crud.js';
+import './components/leaf-edit.js';
 
 // 4. Editor modules
 import './editor/tree.js';
