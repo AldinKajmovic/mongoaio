@@ -1,7 +1,7 @@
 import { state } from '../utils/state.js';
 import { showLoading, hideLoading, toast } from '../utils/ui.js';
 import { highlightText, escapeHtml } from '../utils/dom.js';
-import { currentRenderedItems, runEditorQuery } from './query.js';
+import { currentRenderedItems, currentEJSONItems, runEditorQuery } from './query.js';
 
 /**
  * Repaint the highlight backdrop behind an open JSON editor. A textarea's
@@ -35,9 +35,12 @@ export function startJsonInlineEdit(event, docIndex) {
 
   const doc = currentRenderedItems[docIndex];
   if (!doc) return;
+  // Edit the Extended JSON form (matches what the JSON view displays), but key
+  // the update by the plain _id so the backend query still matches.
+  const ejsonDoc = currentEJSONItems[docIndex] || doc;
 
   const originalHtml = container.innerHTML;
-  const originalJson = JSON.stringify(doc, null, 2);
+  const originalJson = JSON.stringify(ejsonDoc, null, 2);
 
   const textarea = document.createElement('textarea');
   textarea.className = 'editor-json-inline-textarea';
@@ -95,8 +98,8 @@ export function startJsonInlineEdit(event, docIndex) {
       try {
         const updatedDoc = JSON.parse(textarea.value);
 
-        // Safety check for _id
-        if (String(updatedDoc._id) !== String(doc._id)) {
+        // Safety check for _id (compare Extended JSON forms, e.g. {"$oid":...}).
+        if (JSON.stringify(updatedDoc._id) !== JSON.stringify(ejsonDoc._id)) {
           throw new Error('Changing _id is not allowed.');
         }
 

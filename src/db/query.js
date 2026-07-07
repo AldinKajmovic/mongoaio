@@ -1,7 +1,7 @@
 const { ObjectId } = require('mongodb');
 const { getClient } = require('./connection');
-const { serializeDoc } = require('./serialize');
-const { DEFAULT_QUERY_LIMIT } = require('./constants');
+const { serializeDoc, serializeDocEJSON } = require('./serialize');
+const { DEFAULT_QUERY_LIMIT, SOCKET_TIMEOUT_MS } = require('./constants');
 
 /**
  * Recursively revive MongoDB Extended JSON markers that can't survive the
@@ -66,12 +66,15 @@ async function executeQuery(side, dbName, collName, options = {}) {
   const coll = client.db(dbName).collection(collName);
 
   const [items, total] = await Promise.all([
-    coll.find(normalizedFilter, { projection }).sort(sort).skip(skip).limit(limit).toArray(),
-    coll.countDocuments(normalizedFilter)
+    coll.find(normalizedFilter, { projection }).sort(sort).skip(skip).limit(limit).maxTimeMS(SOCKET_TIMEOUT_MS).toArray(),
+    coll.countDocuments(normalizedFilter, { maxTimeMS: SOCKET_TIMEOUT_MS })
   ]);
 
   return {
     items: items.map(serializeDoc),
+    // Extended JSON form (ObjectId -> {"$oid":...}, Date -> {"$date":...}) for
+    // the JSON view / "Copy JSON" so copied documents re-import faithfully.
+    itemsEJSON: items.map(serializeDocEJSON),
     total,
     page: Math.floor(skip / limit) + 1,
     limit

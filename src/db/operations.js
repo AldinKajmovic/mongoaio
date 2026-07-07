@@ -1,13 +1,14 @@
 const { ObjectId } = require('mongodb');
 const { getClient } = require('./connection');
-const { serializeDoc } = require('./serialize');
+const { serializeDoc, deserializeInput } = require('./serialize');
 
 function buildIdQuery(docId) {
-  const isEligible = ObjectId.isValid(docId) && (String(docId) === docId);
-
-  return {
-    _id: isEligible ? new ObjectId(docId) : docId
-  };
+  // An id may arrive as a plain string, or as Extended JSON ({"$oid":"..."})
+  // from the JSON view. Revive the latter to a real ObjectId first.
+  const revived = deserializeInput(docId);
+  if (revived instanceof ObjectId) return { _id: revived };
+  const isEligible = ObjectId.isValid(revived) && (String(revived) === revived);
+  return { _id: isEligible ? new ObjectId(revived) : revived };
 }
 
 /**
@@ -22,6 +23,8 @@ async function getDocument(side, dbName, collName, docId) {
 
 async function insertDocument(side, dbName, collName, doc) {
   const client = getClient(side);
+  // Revive Extended JSON ($oid/$date/...) so pasted docs keep their BSON types.
+  doc = deserializeInput(doc);
   // Convert _id string back to ObjectId if valid
   if (doc._id) {
     const { _id } = buildIdQuery(doc._id);
@@ -34,9 +37,10 @@ async function insertDocument(side, dbName, collName, doc) {
 async function updateDocument(side, dbName, collName, docId, updates) {
   const client = getClient(side);
   const query = buildIdQuery(docId);
-  // Remove _id from updates to avoid immutable field error
+  // Remove _id from updates to avoid immutable field error, then revive any
+  // Extended JSON markers in the edited fields back into BSON types.
   const { _id, ...fieldsToUpdate } = updates;
-  const result = await client.db(dbName).collection(collName).replaceOne(query, fieldsToUpdate);
+  const result = await client.db(dbName).collection(collName).replaceOne(query, deserializeInput(fieldsToUpdate));
   return { modifiedCount: result.modifiedCount };
 }
 
@@ -51,7 +55,7 @@ async function patchDocument(side, dbName, collName, docId, updates) {
   const client = getClient(side);
   const query = buildIdQuery(docId);
   const { _id, ...fieldsToUpdate } = updates;
-  const result = await client.db(dbName).collection(collName).updateOne(query, { $set: fieldsToUpdate });
+  const result = await client.db(dbName).collection(collName).updateOne(query, { $set: deserializeInput(fieldsToUpdate) });
   return { modifiedCount: result.modifiedCount };
 }
 
@@ -69,20 +73,50 @@ async function copyCollectionAcross(fromSide, fromDb, fromColl, toSide, toDb, to
   const fromClient = getClient(fromSide);
   const toClient = getClient(toSide);
 
-  const docs = await fromClient.db(fromDb).collection(fromColl).find({}).toArray();
-  if (docs.length === 0) {
-    await toClient.db(toDb).createCollection(toColl);
-    return { copiedCount: 0 };
+  const sourceColl = fromClient.db(fromDb).collection(fromColl);
+  const targetColl = toClient.db(toDb).collection(toColl);
+
+  // Ensure the target collection exists even for an empty source.
+  const total = await sourceColl.countDocuments({});
+  if (total === 0) {
+    const existing = await toClient.db(toDb).listCollections({ name: toColl }).toArray();
+    if (existing.length === 0) await toClient.db(toDb).createCollection(toColl);
+    return { copiedCount: 0, matchedCount: 0, upsertedCount: 0, modifiedCount: 0 };
   }
-  try {
-    const result = await toClient.db(toDb).collection(toColl).insertMany(docs, { ordered: false });
-    return { copiedCount: result.insertedCount };
-  } catch (err) {
-    if (err.code === 11000) {
-      return { copiedCount: err.result?.nInserted || 0, warning: 'Some documents already existed' };
-    }
-    throw err;
+
+  // Stream the source in batches and upsert by _id so existing docs are UPDATED
+  // (not skipped) and new docs are inserted — this is what a sync must do.
+  const BATCH_SIZE = 500;
+  const cursor = sourceColl.find({});
+  let batch = [];
+  let upsertedCount = 0;
+  let modifiedCount = 0;
+  let matchedCount = 0;
+
+  const flush = async () => {
+    if (batch.length === 0) return;
+    const ops = batch.map(doc => ({
+      replaceOne: { filter: { _id: doc._id }, replacement: doc, upsert: true },
+    }));
+    const res = await targetColl.bulkWrite(ops, { ordered: false });
+    upsertedCount += res.upsertedCount || 0;
+    modifiedCount += res.modifiedCount || 0;
+    matchedCount += res.matchedCount || 0;
+    batch = [];
+  };
+
+  while (await cursor.hasNext()) {
+    batch.push(await cursor.next());
+    if (batch.length >= BATCH_SIZE) await flush();
   }
+  await flush();
+
+  return {
+    copiedCount: upsertedCount + modifiedCount,
+    matchedCount,
+    upsertedCount,
+    modifiedCount,
+  };
 }
 
 async function createDatabase(side, dbName, collName) {
@@ -132,7 +166,7 @@ async function deleteOneByFilter(side, dbName, collName, filter) {
 
 async function insertManyDocs(side, dbName, collName, docs) {
   const client = getClient(side);
-  const result = await client.db(dbName).collection(collName).insertMany(docs);
+  const result = await client.db(dbName).collection(collName).insertMany(deserializeInput(docs));
   return { insertedCount: result.insertedCount };
 }
 

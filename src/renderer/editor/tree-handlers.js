@@ -1,6 +1,6 @@
 import { state, elements } from '../utils/state.js';
 import {
-  clearTags, tagCollection, isTagged,
+  clearTags, tagCollection, toggleTag, isTagged,
   getClipboard, getTagged, copyTaggedToClipboard,
   showContextMenu, setAnchor, getAnchor, tagRange,
 } from './tree-selection.js';
@@ -18,6 +18,17 @@ function handleCollectionClick(e, collNode) {
   const { alias, db, coll } = collNode.dataset;
   if (e.shiftKey && getAnchor()) {
     tagRange(collNode);
+  } else if (e.ctrlKey || e.metaKey) {
+    // Ctrl/Cmd+click: add or remove this node from the selection without clearing others.
+    toggleTag(alias, db, coll, collNode);
+    setAnchor(collNode);
+
+    if (isTagged(alias, db, coll)) {
+      state.editor.alias = alias;
+      state.editor.db = db;
+      state.editor.coll = coll;
+      updateShellContext();
+    }
   } else {
     clearTags();
     tagCollection(alias, db, coll, collNode);
@@ -89,7 +100,7 @@ export function setupTreeHandlers(selectCollectionFn, toggleNodeFn) {
       } else {
         if (clickTimer) clearTimeout(clickTimer);
         pendingClickNode = collNode;
-        const ev = { shiftKey: e.shiftKey };
+        const ev = { shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, metaKey: e.metaKey };
         clickTimer = setTimeout(() => {
           clickTimer = null;
           pendingClickNode = null;

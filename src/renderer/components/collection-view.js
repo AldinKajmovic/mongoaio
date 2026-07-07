@@ -92,7 +92,9 @@ export function renderCollections({ common, onlyInSource, onlyInTarget }, source
       const dbFrom = from === 'source' ? sourceDbName : targetDbName;
       const dbTo = to === 'source' ? sourceDbName : targetDbName;
 
-      const result = await window.api.copyCollection(from, to, dbFrom, coll); // Wait, API signature is (fromSide, toSide, dbName, collName) - it doesn't support cross-db-copy yet! But let's leave it as is for now since it wasn't requested.
+      // Route through the cross-db API so source/target databases with different
+      // names copy into the correct target DB (not blindly into dbFrom).
+      const result = await window.api.copyCollectionAcross(from, dbFrom, coll, to, dbTo, coll);
 
       hideLoading();
       if (result.error) {

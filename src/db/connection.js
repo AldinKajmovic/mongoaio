@@ -1,5 +1,5 @@
 const { MongoClient } = require('mongodb');
-const { CONNECTION_TIMEOUT_MS } = require('./constants');
+const { CONNECTION_TIMEOUT_MS, SOCKET_TIMEOUT_MS, MAX_IDLE_TIME_MS } = require('./constants');
 
 let clients = { source: null, target: null };
 
@@ -13,6 +13,13 @@ async function connect(url) {
   const client = new MongoClient(connectionUrl, {
     connectTimeoutMS: CONNECTION_TIMEOUT_MS,
     serverSelectionTimeoutMS: CONNECTION_TIMEOUT_MS,
+    // Bound in-flight ops so an idle-dropped socket rejects instead of hanging forever.
+    socketTimeoutMS: SOCKET_TIMEOUT_MS,
+    // Retire idle pooled connections before the network kills them.
+    maxIdleTimeMS: MAX_IDLE_TIME_MS,
+    // Auto-retry once on a transient network error.
+    retryReads: true,
+    retryWrites: true,
     ...(isSrv ? {} : { directConnection: true }),
   });
   await client.connect();

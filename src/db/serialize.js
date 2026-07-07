@@ -1,4 +1,4 @@
-const { ObjectId } = require('mongodb');
+const { ObjectId, BSON } = require('mongodb');
 
 function serializeDoc(doc) {
   return JSON.parse(JSON.stringify(doc, (key, value) => {
@@ -8,6 +8,32 @@ function serializeDoc(doc) {
     if (Buffer.isBuffer(value)) return value.toString('base64');
     return value;
   }));
+}
+
+/**
+ * Serialize a document to MongoDB Relaxed Extended JSON, preserving BSON type
+ * markers (ObjectId -> {"$oid":...}, Date -> {"$date":...}, etc.). Unlike
+ * serializeDoc (which flattens types to plain strings for display), this form
+ * round-trips: copy the JSON, paste it into mongoimport, and the types survive.
+ * Used only by the collection editor's JSON view / "Copy JSON" export.
+ * @param {Object} doc
+ * @returns {Object} plain, JSON-safe object with Extended JSON markers
+ */
+function serializeDocEJSON(doc) {
+  return BSON.EJSON.serialize(doc, { relaxed: true });
+}
+
+/**
+ * Revive MongoDB Extended JSON markers ({"$oid":...}, {"$date":...}, ...) in a
+ * value back into native BSON types before a write, so a document edited/pasted
+ * as Extended JSON stores with the right types. Plain values (strings, numbers,
+ * query operators like $gt/$in) pass through unchanged.
+ * @param {*} value
+ * @returns {*}
+ */
+function deserializeInput(value) {
+  if (value === null || value === undefined) return value;
+  return BSON.EJSON.deserialize(value, { relaxed: true });
 }
 
 function deepEqual(a, b) {
@@ -64,6 +90,8 @@ function _computeDiffsRecursive(sourceObj, targetObj, prefix = '') {
 
 module.exports = {
   serializeDoc,
+  serializeDocEJSON,
+  deserializeInput,
   deepEqual,
   computeDiffs,
   _computeDiffsRecursive,

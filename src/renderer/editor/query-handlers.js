@@ -1,6 +1,6 @@
 import { state } from '../utils/state.js';
 import {
-  currentRenderedItems, expandedDocs, runEditorQuery, openEditorEditModal
+  currentRenderedItems, currentEJSONItems, expandedDocs, runEditorQuery, openEditorEditModal
 } from './query.js';
 import { startInlineEdit, startHeaderEdit } from './inline-edit.js';
 import { startJsonInlineEdit } from './json-edit.js';
@@ -19,6 +19,11 @@ export function initQueryHandlers() {
     jsonView.addEventListener('dblclick', (e) => {
       const item = e.target.closest('.editor-json-doc-item');
       if (item) startJsonInlineEdit(e, parseInt(item.dataset.index, 10));
+    });
+    jsonView.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-copy-json')) {
+        copyToClipboard(JSON.stringify(currentEJSONItems, null, 2));
+      }
     });
   }
 

@@ -2,11 +2,16 @@ import { state, elements } from '../utils/state.js';
 import { showLoading, hideLoading, toast } from '../utils/ui.js';
 import { parseRelaxedJSON } from '../utils/dom.js';
 import { openModal } from '../modals/base.js';
+import { openInsertDocModal } from '../modals/insert-doc.js';
 import { setEditorLocalResults } from './search.js';
 import { renderJsonView, renderTreeView, renderTableView } from './query-renderer.js';
 import { initQueryHandlers } from './query-handlers.js';
 
 export let currentRenderedItems = [];
+// Extended JSON form of the same documents (ObjectId -> {"$oid":...}, etc.),
+// index-aligned with currentRenderedItems. Drives the JSON view + "Copy JSON"
+// so exported documents re-import faithfully.
+export let currentEJSONItems = [];
 export const expandedDocs = new Set();
 
 /**
@@ -38,15 +43,15 @@ export async function runEditorQuery() {
   const startTime = Date.now();
   try {
     const result = await window.api.executeQuery(state.editor.side, state.editor.db, state.editor.coll, { filter, sort, projection, limit, skip });
-    hideLoading();
     const duration = (Date.now() - startTime) / 1000;
     const timeEl = document.querySelector('.editor-status-time');
     if (timeEl) timeEl.textContent = duration.toFixed(3) + 's';
     if (result.error) { toast(`Query error: ${result.error}`, 'error'); return; }
     renderEditorResults(result);
   } catch (err) {
-    hideLoading();
     toast(`System error: ${err.message}`, 'error');
+  } finally {
+    hideLoading();
   }
 }
 
@@ -55,6 +60,9 @@ export async function runEditorQuery() {
  */
 export function renderEditorResults(result, skipSync = false) {
   currentRenderedItems = result.items;
+  // Local-search re-renders (search.js) rebuild a result without itemsEJSON but
+  // keep the same items in order, so the existing Extended JSON stays aligned.
+  if (result.itemsEJSON) currentEJSONItems = result.itemsEJSON;
 
   if (!skipSync) {
     state.editor.total = result.total;
@@ -84,7 +92,7 @@ export function renderEditorResults(result, skipSync = false) {
 
   const sq = document.getElementById('editor-search-input')?.value.toLowerCase() || '';
 
-  renderJsonView(result.items, sq);
+  renderJsonView(currentEJSONItems.length ? currentEJSONItems : result.items, sq);
   renderTreeView(result.items, sq, expandedDocs);
   renderTableView(result.items, sq, state.editor.skip);
 }
@@ -114,6 +122,7 @@ export function openEditorEditModal(index) {
  */
 export function clearEditorResults() {
   currentRenderedItems = [];
+  currentEJSONItems = [];
   expandedDocs.clear();
 
   // Clear query inputs
@@ -166,6 +175,13 @@ if (elements.btnEditorPrev) elements.btnEditorPrev.onclick = () => changePage('p
 if (elements.btnEditorNext) elements.btnEditorNext.onclick = () => changePage('next');
 if (elements.btnEditorLast) elements.btnEditorLast.onclick = () => changePage('last');
 if (elements.btnEditorRefresh) elements.btnEditorRefresh.onclick = () => runEditorQuery();
+if (elements.btnEditorAddDoc) elements.btnEditorAddDoc.onclick = () => {
+  if (!state.editor.db || !state.editor.coll) {
+    toast('Please select a collection from the tree first', 'warning');
+    return;
+  }
+  openInsertDocModal();
+};
 
 /**
  * Point the sort field(s) in the desired direction and re-run the query.
