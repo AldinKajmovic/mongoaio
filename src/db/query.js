@@ -85,4 +85,5 @@ module.exports = {
   listDatabases,
   listCollections,
   executeQuery,
+  reviveExtendedJson,
 };

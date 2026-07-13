@@ -178,6 +178,18 @@
   min-width: 0;
 }
 
+/* An empty value has no text, so show a faint "(empty)" hint. This gives the
+   cell a visible, clickable target so it can be double-clicked to edit in
+   place — instead of being an invisible zero-width span. The hint is a CSS
+   pseudo-element, so it's excluded from innerText and the edit input still
+   starts blank. It's hidden while editing (once the inline input is present). */
+.editor-field-value-empty:not(:has(.editor-inline-input))::before {
+  content: '(empty)';
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.55;
+}
+
 .editor-field-type {
   font-size: 11px;
   color: var(--text-muted);

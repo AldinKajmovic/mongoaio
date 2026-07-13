@@ -32,6 +32,28 @@ contextBridge.exposeInMainWorld('api', {
   serverMetrics: (side) => ipcRenderer.invoke('server-metrics', side),
   executeQuery: (side, dbName, collName, options) => ipcRenderer.invoke('execute-query', side, dbName, collName, options),
 
+  // Index management
+  listIndexes: (side, dbName, collName) => ipcRenderer.invoke('list-indexes', side, dbName, collName),
+  createIndex: (side, dbName, collName, keys, options) => ipcRenderer.invoke('create-index', side, dbName, collName, keys, options),
+  dropIndex: (side, dbName, collName, indexName) => ipcRenderer.invoke('drop-index', side, dbName, collName, indexName),
+
+  // Explain plan
+  explainQuery: (side, dbName, collName, options, verbosity) => ipcRenderer.invoke('explain-query', side, dbName, collName, options, verbosity),
+
+  // Schema analysis
+  analyzeSchema: (side, dbName, collName, sampleSize) => ipcRenderer.invoke('analyze-schema', side, dbName, collName, sampleSize),
+
+  // Aggregation pipeline
+  runAggregate: (side, dbName, collName, pipeline, options) => ipcRenderer.invoke('run-aggregate', side, dbName, collName, pipeline, options),
+
+  // Document field ops (tree add/remove field)
+  unsetField: (side, dbName, collName, docId, fieldPath) => ipcRenderer.invoke('unset-field', side, dbName, collName, docId, fieldPath),
+  setField: (side, dbName, collName, docId, fieldPath, value) => ipcRenderer.invoke('set-field', side, dbName, collName, docId, fieldPath, value),
+
+  // Import / Export
+  exportData: (params) => ipcRenderer.invoke('export-data', params),
+  importData: (params) => ipcRenderer.invoke('import-data', params),
+
   // Auto-updater
   getVersion: () => ipcRenderer.invoke('get-version'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),

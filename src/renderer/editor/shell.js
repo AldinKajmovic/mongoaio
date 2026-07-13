@@ -2,7 +2,7 @@ import { state, elements } from '../utils/state.js';
 import { toast } from '../utils/ui.js';
 import { appendShellResult } from './shell-renderer.js';
 import { initShellTabs } from './shell-tabs.js';
-import { hideMetricsPanel } from './metrics.js';
+import { activateView } from './editor-views.js';
 
 /**
  * Initialize Shell Tab Event Listeners
@@ -61,13 +61,7 @@ function setupTabSwitching() {
  * Show the shell panel, hiding the collections/editor content
  */
 export function showShellPanel() {
-  hideMetricsPanel();
-  if (elements.editorViewCollectionsContent) elements.editorViewCollectionsContent.classList.add('u-hidden');
-  if (elements.editorViewShellContent) elements.editorViewShellContent.classList.remove('u-hidden');
-
-  if (elements.btnEditorViewShell) elements.btnEditorViewShell.classList.add('active');
-  if (elements.btnEditorViewCollections) elements.btnEditorViewCollections.classList.remove('active');
-
+  activateView('shell');
   updateShellContext();
 }
 
@@ -75,12 +69,7 @@ export function showShellPanel() {
  * Hide the shell panel, returning to the collections/editor view
  */
 export function hideShellPanel() {
-  hideMetricsPanel();
-  if (elements.editorViewShellContent) elements.editorViewShellContent.classList.add('u-hidden');
-  if (elements.editorViewCollectionsContent) elements.editorViewCollectionsContent.classList.remove('u-hidden');
-
-  if (elements.btnEditorViewShell) elements.btnEditorViewShell.classList.remove('active');
-  if (elements.btnEditorViewCollections) elements.btnEditorViewCollections.classList.add('active');
+  activateView('collections');
 }
 
 /**

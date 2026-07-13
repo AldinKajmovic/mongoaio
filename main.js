@@ -23,7 +23,7 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
-  registerIpcHandlers();
+  registerIpcHandlers(mainWindow);
   initUpdater(mainWindow);
 }
 

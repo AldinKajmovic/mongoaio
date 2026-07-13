@@ -31,7 +31,23 @@ import { initEditorShellLogic } from './editor/shell.js';
 import { initMetricsView } from './editor/metrics.js';
 import './editor/resize.js';
 import { initUpdater } from './utils/updater.js';
+import { initEditorViews } from './editor/editor-views.js';
+import { initIndexesView } from './editor/indexes.js';
+import { initExplain } from './editor/explain.js';
+import { initSchemaView } from './editor/schema.js';
+import { initAggregationView } from './editor/aggregation.js';
+import { initImportExport } from './editor/import-export.js';
+import { initQueryHistory } from './editor/query-history.js';
 
 initEditorShellLogic();
 initMetricsView();
 initUpdater();
+
+// New feature panels (spine-wired; implemented in their own modules)
+initEditorViews();
+initIndexesView();
+initExplain();
+initSchemaView();
+initAggregationView();
+initImportExport();
+initQueryHistory();

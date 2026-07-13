@@ -226,6 +226,19 @@ function buildAndApplyFilter() {
     return cond;
   });
 
+  // Wrap a single field condition (`{ field: inner }`) so it matches an array
+  // element via $elemMatch. A scalar `inner` (e.g. from "equals") is promoted to
+  // `{ $eq: inner }` because $elemMatch requires a query object. ObjectId markers
+  // ({$oid}) count as scalar values, not query objects.
+  const toElemMatch = (cond, negate) => {
+    const key = Object.keys(cond)[0];
+    const inner = cond[key];
+    const isQueryObj = inner !== null && typeof inner === 'object'
+      && !Array.isArray(inner) && !('$oid' in inner);
+    const em = { $elemMatch: isQueryObj ? inner : { $eq: inner } };
+    return { [key]: negate ? { $not: em } : em };
+  };
+
   let filter;
   if (mode === 'all') {
     filter = fieldConditions.length === 1 ? fieldConditions[0] : { $and: fieldConditions };
@@ -233,7 +246,14 @@ function buildAndApplyFilter() {
     filter = { $or: fieldConditions };
   } else if (mode === 'nor') {
     filter = { $nor: fieldConditions };
+  } else if (mode === 'elemMatch' || mode === 'notElemMatch') {
+    const negate = mode === 'notElemMatch';
+    const conds = fieldConditions.map((c) => toElemMatch(c, negate));
+    filter = conds.length === 1 ? conds[0] : { $and: conds };
   }
+
+  // Never emit `undefined` for an unrecognised mode — fall back to match-all.
+  if (!filter) filter = {};
 
   elements.editorQueryFilter.value = JSON.stringify(filter);
 }

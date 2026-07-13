@@ -1,5 +1,6 @@
-const { app, ipcMain } = require('electron');
+const { app, ipcMain, safeStorage } = require('electron');
 const db = require('./src/db');
+const io = require('./src/main/io');
 const fs = require('fs');
 const path = require('path');
 const {
@@ -16,30 +17,75 @@ function getConfigPath() {
   return path.join(app.getPath('userData'), 'connections.json');
 }
 
-function getConnections() {
+function encAvailable() {
+  try { return safeStorage.isEncryptionAvailable(); } catch (_) { return false; }
+}
+
+function encodeUrl(url) {
+  if (encAvailable()) {
+    try { return { enc: safeStorage.encryptString(url).toString('base64') }; }
+    catch (_) { /* fall through to plaintext */ }
+  }
+  return url;
+}
+
+function decodeUrl(entry) {
+  if (entry && typeof entry === 'object' && typeof entry.enc === 'string') {
+    try { return safeStorage.decryptString(Buffer.from(entry.enc, 'base64')); }
+    catch (_) { return null; }
+  }
+  return typeof entry === 'string' ? entry : null;
+}
+
+// Read the raw on-disk map (values may be encrypted or plaintext).
+function readRaw() {
   const configPath = getConfigPath();
   try {
-    if (fs.existsSync(configPath)) {
-      return JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    }
-  } catch (e) { }
+    if (fs.existsSync(configPath)) return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch (_) { }
   return {};
 }
 
+function writeRaw(raw) {
+  fs.writeFileSync(getConfigPath(), JSON.stringify(raw, null, 2));
+}
+
+function getConnections() {
+  const raw = readRaw();
+  const out = {};
+  let needsMigration = false;
+  for (const [alias, entry] of Object.entries(raw)) {
+    const url = decodeUrl(entry);
+    if (url === null) {
+      console.warn(`Could not decrypt saved connection "${alias}" — was connections.json created on another machine or user account?`);
+      out[alias] = '';
+    } else {
+      out[alias] = url;
+    }
+    if (encAvailable() && typeof entry === 'string') needsMigration = true;
+  }
+  if (needsMigration) {
+    const migrated = {};
+    for (const [alias, entry] of Object.entries(raw)) {
+      migrated[alias] = (typeof entry === 'string') ? encodeUrl(entry) : entry;
+    }
+    try { writeRaw(migrated); } catch (_) { /* non-fatal */ }
+  }
+  return out;
+}
+
 function saveConnection(alias, url) {
-  const configPath = getConfigPath();
-  const conns = getConnections();
-  conns[alias] = url;
-  fs.writeFileSync(configPath, JSON.stringify(conns, null, 2));
-  return conns;
+  const raw = readRaw();
+  raw[alias] = encodeUrl(url);
+  writeRaw(raw);
+  return getConnections();
 }
 
 function deleteConnection(alias) {
-  const configPath = getConfigPath();
-  const conns = getConnections();
-  delete conns[alias];
-  fs.writeFileSync(configPath, JSON.stringify(conns, null, 2));
-  return conns;
+  const raw = readRaw();
+  delete raw[alias];
+  writeRaw(raw);
+  return getConnections();
 }
 
 function safeHandler(fn) {
@@ -52,7 +98,7 @@ function safeHandler(fn) {
   };
 }
 
-function registerIpcHandlers() {
+function registerIpcHandlers(mainWindow) {
   ipcMain.handle('get-connections', () => getConnections());
 
   ipcMain.handle('save-connection', safeHandler(async (_event, alias, url) => {
@@ -260,6 +306,86 @@ function registerIpcHandlers() {
     validateString(collName, 'collName');
     const opts = validateOptions(options, 'options');
     return await db.executeQuery(side, dbName, collName, opts);
+  }));
+
+  // --- Index management -----------------------------------------------------
+  ipcMain.handle('list-indexes', safeHandler(async (_event, side, dbName, collName) => {
+    validateSide(side);
+    validateString(dbName, 'dbName');
+    validateString(collName, 'collName');
+    return await db.listIndexes(side, dbName, collName);
+  }));
+
+  ipcMain.handle('create-index', safeHandler(async (_event, side, dbName, collName, keys, options) => {
+    validateSide(side);
+    validateString(dbName, 'dbName');
+    validateString(collName, 'collName');
+    validateObject(keys, 'keys');
+    const opts = (options && typeof options === 'object' && !Array.isArray(options)) ? options : {};
+    return await db.createIndex(side, dbName, collName, keys, opts);
+  }));
+
+  ipcMain.handle('drop-index', safeHandler(async (_event, side, dbName, collName, indexName) => {
+    validateSide(side);
+    validateString(dbName, 'dbName');
+    validateString(collName, 'collName');
+    validateString(indexName, 'indexName');
+    return await db.dropIndex(side, dbName, collName, indexName);
+  }));
+
+  // --- Explain plan ---------------------------------------------------------
+  ipcMain.handle('explain-query', safeHandler(async (_event, side, dbName, collName, options, verbosity) => {
+    validateSide(side);
+    validateString(dbName, 'dbName');
+    validateString(collName, 'collName');
+    const opts = validateOptions(options, 'options');
+    return await db.explainQuery(side, dbName, collName, opts, verbosity);
+  }));
+
+  // --- Schema analysis ------------------------------------------------------
+  ipcMain.handle('analyze-schema', safeHandler(async (_event, side, dbName, collName, sampleSize) => {
+    validateSide(side);
+    validateString(dbName, 'dbName');
+    validateString(collName, 'collName');
+    return await db.analyzeSchema(side, dbName, collName, Number(sampleSize) || 1000);
+  }));
+
+  // --- Aggregation pipeline -------------------------------------------------
+  ipcMain.handle('run-aggregate', safeHandler(async (_event, side, dbName, collName, pipeline, options) => {
+    validateSide(side);
+    validateString(dbName, 'dbName');
+    validateString(collName, 'collName');
+    if (!Array.isArray(pipeline)) throw new Error('pipeline must be an array');
+    const opts = (options && typeof options === 'object' && !Array.isArray(options)) ? options : {};
+    return await db.runAggregate(side, dbName, collName, pipeline, opts);
+  }));
+
+  // --- Document field ops (tree add/remove field) ---------------------------
+  ipcMain.handle('unset-field', safeHandler(async (_event, side, dbName, collName, docId, fieldPath) => {
+    validateSide(side);
+    validateString(dbName, 'dbName');
+    validateString(collName, 'collName');
+    validateDocId(docId);
+    validateString(fieldPath, 'fieldPath');
+    return await db.unsetField(side, dbName, collName, docId, fieldPath);
+  }));
+
+  ipcMain.handle('set-field', safeHandler(async (_event, side, dbName, collName, docId, fieldPath, value) => {
+    validateSide(side);
+    validateString(dbName, 'dbName');
+    validateString(collName, 'collName');
+    validateDocId(docId);
+    validateString(fieldPath, 'fieldPath');
+    return await db.setField(side, dbName, collName, docId, fieldPath, value);
+  }));
+
+  // --- Import / Export (file dialogs live in the main process) --------------
+  ipcMain.handle('export-data', safeHandler(async (_event, params) => {
+    return await io.exportData(mainWindow, db, params || {});
+  }));
+
+  ipcMain.handle('import-data', safeHandler(async (_event, params) => {
+    return await io.importData(mainWindow, db, params || {});
   }));
 }
 

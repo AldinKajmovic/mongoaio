@@ -12,6 +12,9 @@ export function initEditorShell() {
           <div class="logo-sm">CompareDB</div>
           <nav class="editor-nav">
             <button id="btn-editor-view-collections" class="btn btn-ghost btn-sm active">Collections</button>
+            <button id="btn-editor-view-aggregation" class="btn btn-ghost btn-sm">Aggregation</button>
+            <button id="btn-editor-view-schema" class="btn btn-ghost btn-sm">Schema</button>
+            <button id="btn-editor-view-indexes" class="btn btn-ghost btn-sm">Indexes</button>
             <button id="btn-editor-view-shell" class="btn btn-ghost btn-sm">Shell</button>
             <button id="btn-editor-view-metrics" class="btn btn-ghost btn-sm">Performance</button>
           </nav>
@@ -86,6 +89,10 @@ export function initEditorShell() {
                     <span class="editor-pagination-info" id="editor-pagination-info">Documents 0 to 0</span>
                   </div>
                   <div class="editor-pagination-right">
+                    <button class="btn btn-ghost btn-sm" id="btn-editor-explain" title="Explain the current query's plan">Explain</button>
+                    <button class="btn btn-ghost btn-sm" id="btn-editor-query-history" title="Query history & saved queries">History</button>
+                    <button class="btn btn-ghost btn-icon btn-sm" id="btn-editor-import" title="Import file → collection"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+                    <button class="btn btn-ghost btn-icon btn-sm" id="btn-editor-export" title="Export results / collection → file"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
                     <button class="btn btn-ghost btn-icon btn-sm" id="btn-editor-search-local" title="Search loaded (Ctrl+F)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
                     <button class="btn btn-ghost btn-icon btn-sm" id="btn-editor-add-doc" title="Add document"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
                     <div class="editor-view-dropdown" id="editor-view-dropdown">
@@ -124,7 +131,19 @@ export function initEditorShell() {
                 <div class="editor-table-wrapper"><table class="editor-table" id="editor-table"><thead><tr id="editor-table-head"><th class="editor-table-th">#</th></tr></thead><tbody id="editor-table-body"></tbody></table></div>
               </div>
 
+              <!-- Explain plan overlay panel (populated by explain.js) -->
+              <div id="editor-explain-panel" class="editor-explain-panel u-hidden"></div>
+
             </div>
+
+            <!-- Aggregation pipeline builder (populated by aggregation.js) -->
+            <div id="editor-view-aggregation-content" class="u-hidden"></div>
+
+            <!-- Schema analysis (populated by schema.js) -->
+            <div id="editor-view-schema-content" class="u-hidden"></div>
+
+            <!-- Index management (populated by indexes.js) -->
+            <div id="editor-view-indexes-content" class="u-hidden"></div>
 
             <!-- Shell View Content (separate from editor) -->
             <div id="editor-view-shell-content" class="u-hidden">

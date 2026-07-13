@@ -31,3 +31,12 @@
 @import url('./views/editor-shell.css');
 @import url('./views/editor-shell-table.css');
 @import url('./views/editor-metrics.css');
+
+/* New feature panels */
+@import url('./views/editor-indexes.css');
+@import url('./views/editor-explain.css');
+@import url('./views/editor-schema.css');
+@import url('./views/editor-aggregation.css');
+@import url('./views/editor-io.css');
+@import url('./views/editor-query-history.css');
+@import url('./views/editor-tree-fields.css');

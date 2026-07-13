@@ -52,44 +52,71 @@ export function subtreeMatchesSearch(val, sq) {
  * match is rendered eagerly and marked expanded, so the match is visible in
  * the DOM without the user having to manually open each level.
  */
-export function renderNestedChildren(val, docIndex, depth, sq) {
+export function renderNestedChildren(val, docIndex, depth, sq, parentPath = '') {
   if (!isExpandable(val)) return '';
 
-  const entries = Array.isArray(val)
+  const isArr = Array.isArray(val);
+  const entries = isArr
     ? val.map((item, i) => [String(i), item])
     : Object.entries(val);
 
-  return entries.map(([key, childVal]) => {
+
+  const editable = docIndex >= 0;
+
+  const rowsHtml = entries.map(([key, childVal]) => {
     const type = getFieldType(key, childVal);
     const expandable = isExpandable(childVal);
     const valStr = expandable
       ? valueSummary(childVal)
       : (childVal === null ? 'null' : String(childVal));
 
+    // Full dot path from the document root — powers per-field set/unset.
+    const path = parentPath ? `${parentPath}.${key}` : key;
+
     const keyHtml = sq ? highlightText(key, sq) : escapeHtml(key);
     const valHtml = sq ? highlightText(valStr, sq) : escapeHtml(valStr);
+    const isEmptyVal = !expandable && valStr === '';
 
     // Auto-expand this branch when searching and a match lies within it.
     const autoExpand = expandable && !!sq && subtreeMatchesSearch(childVal, sq);
-    const childrenHtml = autoExpand ? renderNestedChildren(childVal, docIndex, depth + 1, sq) : '';
+    const childrenHtml = autoExpand ? renderNestedChildren(childVal, docIndex, depth + 1, sq, path) : '';
+
+    // Per-field delete (× on hover). Never offered for _id or array elements.
+    const canDelete = editable && !isArr && path !== '_id';
+    const deleteBtn = canDelete
+      ? `<button class="editor-field-delete" data-index="${docIndex}" data-path="${escapeHtml(path)}" title="Remove field" aria-label="Remove field"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>`
+      : '';
 
     return `
       <div class="editor-field-row${expandable ? ' nested-expandable' : ''}${autoExpand ? ' nested-expanded' : ''}" draggable="true"
            data-index="${docIndex}" data-key="${escapeHtml(key)}"
-           data-field="${escapeHtml(key)}" data-type="${type}"
+           data-field="${escapeHtml(key)}" data-type="${type}" data-path="${escapeHtml(path)}"
            data-value='${escapeHtml(JSON.stringify(childVal))}' data-depth="${depth}">
         <span class="editor-field-indent">
           ${expandable ? '<span class="tree-arrow nested-arrow">&#9654;</span>' : ''}
         </span>
         <span class="editor-field-key" data-index="${docIndex}"
               data-key="${escapeHtml(key)}" data-type="key">${keyHtml}</span>
-        <span class="editor-field-value${expandable ? ' nested-summary' : ''}"
+        <span class="editor-field-value${expandable ? ' nested-summary' : ''}${isEmptyVal ? ' editor-field-value-empty' : ''}"
               data-index="${docIndex}" data-key="${escapeHtml(key)}"
               data-type="value">${valHtml}</span>
         <span class="editor-field-type u-text-muted u-font-xs u-ml-8">${type}</span>
+        ${deleteBtn}
       </div>
       ${expandable ? `<div class="editor-nested-children"${autoExpand ? ' data-rendered="true"' : ''}>${childrenHtml}</div>` : ''}`;
   }).join('');
+
+  // "+ add field" affordance at the end of every editable object level
+  // (document root and nested objects). parentPath is the prefix a new field
+  // name is appended to.
+  const addHtml = (editable && !isArr)
+    ? `<div class="editor-field-add-row" data-index="${docIndex}" data-path="${escapeHtml(parentPath)}" data-depth="${depth}">` +
+    `<button class="editor-field-add" data-index="${docIndex}" data-path="${escapeHtml(parentPath)}">` +
+    `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>` +
+    `<span>add field</span></button></div>`
+    : '';
+
+  return rowsHtml + addHtml;
 }
 
 /**
@@ -107,7 +134,8 @@ export function toggleNestedField(fieldRow, sq) {
     const val = JSON.parse(fieldRow.dataset.value);
     const docIndex = parseInt(fieldRow.dataset.index, 10);
     const depth = parseInt(fieldRow.dataset.depth || '0', 10) + 1;
-    children.innerHTML = renderNestedChildren(val, docIndex, depth, sq);
+    const parentPath = fieldRow.dataset.path || '';
+    children.innerHTML = renderNestedChildren(val, docIndex, depth, sq, parentPath);
     children.dataset.rendered = 'true';
     // Set depth-based indentation programmatically (CSP-compliant)
     applyDepthIndent(children);
@@ -118,7 +146,7 @@ export function toggleNestedField(fieldRow, sq) {
  * Apply indentation to nested field rows based on data-depth
  */
 export function applyDepthIndent(container) {
-  container.querySelectorAll('.editor-field-row').forEach(row => {
+  container.querySelectorAll('.editor-field-row, .editor-field-add-row').forEach(row => {
     const d = parseInt(row.dataset.depth, 10) || 0;
     row.style.paddingLeft = `${28 + d * 16}px`;
   });

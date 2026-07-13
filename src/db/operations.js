@@ -183,6 +183,7 @@ async function updateManyByFilter(side, dbName, collName, filter, update) {
 }
 
 module.exports = {
+  buildIdQuery,
   getDocument,
   insertDocument,
   updateDocument,

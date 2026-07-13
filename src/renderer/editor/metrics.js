@@ -3,6 +3,7 @@ import { toast } from '../utils/ui.js';
 import { OPS_SERIES, RW_SERIES, NET_SERIES, MEM_SERIES, buildDom } from './metrics-dom.js';
 import { MAX_POINTS, fmtBytes, fmtMemMB, fmtNum, setText, drawChart, updateLegend } from './metrics-charts.js';
 import { renderHottest, renderSlowest } from './metrics-lists.js';
+import { activateView, getCurrentView } from './editor-views.js';
 
 // ---------------------------------------------------------------------------
 // Live performance dashboard. Polls window.api.serverMetrics() once a second,
@@ -161,14 +162,8 @@ export function initMetricsView() {
 export function showMetricsPanel() {
   if (!built) built = buildDom(togglePause);
 
-  // Hide the sibling views and update nav active state.
-  if (elements.editorViewCollectionsContent) elements.editorViewCollectionsContent.classList.add('u-hidden');
-  if (elements.editorViewShellContent) elements.editorViewShellContent.classList.add('u-hidden');
-  if (elements.editorViewMetricsContent) elements.editorViewMetricsContent.classList.remove('u-hidden');
-
-  if (elements.btnEditorViewCollections) elements.btnEditorViewCollections.classList.remove('active');
-  if (elements.btnEditorViewShell) elements.btnEditorViewShell.classList.remove('active');
-  if (elements.btnEditorViewMetrics) elements.btnEditorViewMetrics.classList.add('active');
+  // Single switch handles hiding siblings + nav active state.
+  activateView('metrics');
 
   resetHistory();
   paused = false;
@@ -192,9 +187,8 @@ export function stopMetricsPolling() {
   }
 }
 
-/** Hide the metrics panel and stop polling — used by the other view tabs. */
+/** Stop polling and leave the metrics view (used if another flow needs to). */
 export function hideMetricsPanel() {
   stopMetricsPolling();
-  if (elements.editorViewMetricsContent) elements.editorViewMetricsContent.classList.add('u-hidden');
-  if (elements.btnEditorViewMetrics) elements.btnEditorViewMetrics.classList.remove('active');
+  if (getCurrentView() === 'metrics') activateView('collections');
 }

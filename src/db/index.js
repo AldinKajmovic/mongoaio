@@ -5,6 +5,11 @@ const query = require('./query');
 const shell = require('./shell');
 const metrics = require('./metrics');
 const constants = require('./constants');
+const indexes = require('./indexes');
+const explain = require('./explain');
+const schema = require('./schema');
+const aggregate = require('./aggregate');
+const fieldOps = require('./field-ops');
 
 module.exports = {
   ...constants,
@@ -26,6 +31,24 @@ module.exports = {
   listDatabases: query.listDatabases,
   listCollections: query.listCollections,
   executeQuery: query.executeQuery,
+
+  // indexes
+  listIndexes: indexes.listIndexes,
+  createIndex: indexes.createIndex,
+  dropIndex: indexes.dropIndex,
+
+  // explain
+  explainQuery: explain.explainQuery,
+
+  // schema analysis
+  analyzeSchema: schema.analyzeSchema,
+
+  // aggregation
+  runAggregate: aggregate.runAggregate,
+
+  // document field ops
+  unsetField: fieldOps.unsetField,
+  setField: fieldOps.setField,
 
   // comparison
   compareDatabases: comparison.compareDatabases,

@@ -1,0 +1,84 @@
+/* =============================================
+   Editor — Import / Export Popovers
+   ============================================= */
+
+.io-popover {
+  position: fixed;
+  z-index: 2100;
+  width: 280px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  font-family: var(--font-sans);
+  animation: modalIn 0.15s ease;
+}
+
+.io-import-popover {
+  width: 300px;
+}
+
+.io-popover-header {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.2px;
+}
+
+.io-popover-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.io-popover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.io-popover-field label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.io-popover-select {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.io-popover-select:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.io-popover-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.io-popover-text strong {
+  color: var(--text-primary);
+}
+
+.io-popover-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
