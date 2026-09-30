@@ -1,6 +1,6 @@
 import { state, elements } from './state.js';
 import { showLoading, hideLoading, toast, setStatus, showView } from './ui.js';
-import { shortUrl } from './dom.js';
+import { shortUrl, escapeHtml } from './dom.js';
 import { renderDatabases } from '../components/database-view.js';
 import { loadCollections } from '../components/collection-view.js';
 import { loadDocuments } from '../components/document-view.js';
@@ -62,7 +62,7 @@ export function navigateTo(level, params = {}) {
 export function updateBreadcrumb(items) {
   elements.breadcrumb.innerHTML = items.map((item, i) => {
     const isLast = i === items.length - 1;
-    return `<button class="breadcrumb-item ${isLast ? 'active' : ''}" data-level="${item.level}">${item.label}</button>`;
+    return `<button class="breadcrumb-item ${isLast ? 'active' : ''}" data-level="${escapeHtml(item.level)}">${escapeHtml(item.label)}</button>`;
   }).join('');
 
   elements.breadcrumb.querySelectorAll('.breadcrumb-item').forEach(btn => {

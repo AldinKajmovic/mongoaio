@@ -27,6 +27,7 @@
 @import url('./views/editor-data-views.css');
 @import url('./views/editor-panels-controls.css');
 @import url('./views/editor-panels-query.css');
+@import url('./views/editor-query-builder.css');
 @import url('./views/editor-tree.css');
 @import url('./views/editor-shell.css');
 @import url('./views/editor-shell-table.css');
@@ -34,9 +35,14 @@
 
 /* New feature panels */
 @import url('./views/editor-indexes.css');
+@import url('./views/editor-indexes-form.css');
 @import url('./views/editor-explain.css');
 @import url('./views/editor-schema.css');
+@import url('./views/editor-schema-types.css');
 @import url('./views/editor-aggregation.css');
+@import url('./views/editor-aggregation-preview.css');
 @import url('./views/editor-io.css');
 @import url('./views/editor-query-history.css');
 @import url('./views/editor-tree-fields.css');
+@import url('./views/editor-pending.css');
+@import url('./views/editor-pending-bar.css');

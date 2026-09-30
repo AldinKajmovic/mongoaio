@@ -14,25 +14,22 @@ export function debounce(fn, delay) {
  * Parse relaxed JSON that allows unquoted keys (MongoDB shell style).
  * e.g. {polNum: "value", $gt: 5} -> {"polNum": "value", "$gt": 5}
  *
- * ObjectId("...") is preserved as Extended JSON ({"$oid":"..."}) so the
- * backend can query it as a real ObjectId rather than a plain string. The
- * id is captured verbatim; validity is enforced by the backend.
+ * mongosh constructors become Extended JSON markers ({"$oid"}, {"$date"},
+ * {"$numberLong"}, {"$numberDecimal"}) so the backend queries real BSON types.
+ * Values are captured verbatim; validity is enforced by the backend.
  */
 export function parseRelaxedJSON(str) {
   try {
     return JSON.parse(str);
   } catch (_) {
-    // 1. Remove shell-like constructors: NumberInt(123) -> 123, etc.
     let fixed = str
-      .replace(/NumberInt\((\d+)\)/g, '$1')
-      .replace(/NumberLong\((\d+)\)/g, '$1')
-      .replace(/Double\(([\d.]+)\)/g, '$1')
-      .replace(/ObjectId\(\s*['"]([^'"]*)['"]\s*\)/g, '{"$oid":"$1"}')
-      .replace(/ISODate\(['"](.+?)['"]\)/g, '"$1"')
-      .replace(/new Date\(['"](.+?)['"]\)/g, '"$1"')
-      .replace(/Date\(['"](.+?)['"]\)/g, '"$1"');
+      .replace(/NumberInt\(\s*['"]?(-?\d+)['"]?\s*\)/g, '$1')
+      .replace(/NumberLong\(\s*['"]?(-?\d+)['"]?\s*\)/g, '{"$$numberLong":"$1"}')
+      .replace(/NumberDecimal\(\s*['"]?([-\d.eE+]+)['"]?\s*\)/g, '{"$$numberDecimal":"$1"}')
+      .replace(/Double\(\s*(-?[\d.]+)\s*\)/g, '$1')
+      .replace(/ObjectId\(\s*['"]([^'"]*)['"]\s*\)/g, '{"$$oid":"$1"}')
+      .replace(/(?:new\s+)?(?:ISODate|Date)\(\s*['"](.+?)['"]\s*\)/g, '{"$$date":"$1"}');
 
-    // 2. Add quotes around unquoted keys: word chars and $ at start
     fixed = fixed.replace(/([{,]\s*)([$a-zA-Z_][$a-zA-Z0-9_.]*)\s*:/g, '$1"$2":');
     
     return JSON.parse(fixed);
@@ -54,9 +51,7 @@ export function getNestedValue(obj, path) {
 }
 
 // SECURITY: Document field names are untrusted (a compared DB could contain a
-// key literally named `__proto__`/`constructor`/`prototype`). Reject any path
-// touching these so nested writes can't pollute Object.prototype.
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+export const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 /**
  * Set a nested value using dot notation, creating intermediate objects as
@@ -95,35 +90,66 @@ export function formatValue(val) {
   return escapeHtml(String(val));
 }
 
+/** Empty-state block; `text` is plain text (it often echoes the user's search) and is escaped. */
 export function emptyState(text) {
   return `
     <div class="empty-state">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
-      <span>${text}</span>
+      <span>${escapeHtml(text)}</span>
     </div>
   `;
 }
 
+/**
+ * Escape a string for both HTML text and attribute values. `'` must be escaped
+ * too: values are embedded in single-quoted attributes (e.g. data-value='...'),
+ * so an apostrophe in the data (`"Rider's list"`) would close the attribute
+ * early and truncate whatever follows.
+ */
 export function escapeHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 export function highlightText(text, query) {
   if (!query) return escapeHtml(text);
   const escaped = escapeHtml(text);
-  const queryEscaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const queryEscaped = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(`(${queryEscaped})`, 'gi');
   return escaped.replace(regex, '<mark class="search-highlight">$1</mark>');
+}
+
+/**
+ * querySelectorAll typed as HTML elements — the renderer's selectors only ever
+ * match HTML elements (never SVG), so their style/dataset are available.
+ * @param {string} selector
+ * @param {ParentNode} [root]
+ * @returns {NodeListOf<HTMLElement>}
+ */
+export function queryAllHtml(selector, root = document) {
+  return /** @type {NodeListOf<HTMLElement>} */ (root.querySelectorAll(selector));
+}
+
+/**
+ * Closest ancestor of an event's target matching `selector` (the target itself included).
+ * @param {Event} e
+ * @param {string} selector
+ * @returns {HTMLElement | null}
+ */
+export function closestTarget(e, selector) {
+  return e.target instanceof Element ? /** @type {HTMLElement | null} */ (e.target.closest(selector)) : null;
 }
 
 /**
  * Render a placeholder for JSON that populates when visible/needed
  */
 export function lazyPrettyJson(doc, containerId) {
-  return `<div class="lazy-json" id="${containerId}" data-json='${JSON.stringify(doc).replace(/'/g, "&apos;")}'>
-    <button class="btn btn-ghost btn-xs reveal-json-btn" data-container-id="${containerId}">Click to show full JSON</button>
+  const id = escapeHtml(containerId);
+  return `<div class="lazy-json" id="${id}" data-json='${escapeHtml(JSON.stringify(doc))}'>
+    <button class="btn btn-ghost btn-xs reveal-json-btn" data-container-id="${id}">Click to show full JSON</button>
   </div>`;
 }
 
@@ -135,9 +161,8 @@ export function revealJson(id) {
   container.classList.add('revealed');
 }
 
-// Global delegation for revealJson
 document.addEventListener('click', (e) => {
-  const btn = e.target.closest('.reveal-json-btn');
+  const btn = closestTarget(e, '.reveal-json-btn');
   if (btn && btn.dataset.containerId) {
     revealJson(btn.dataset.containerId);
   }
@@ -146,8 +171,6 @@ document.addEventListener('click', (e) => {
 export async function copyToClipboard(text) {
   try {
     await navigator.clipboard.writeText(text);
-    // Note: toast() must be provided by the caller or imported separately
-    // to avoid circular dependencies. We use a dynamic import-free approach:
     const el = document.createElement('div');
     el.className = 'toast success';
     el.textContent = 'Copied to clipboard';
@@ -163,4 +186,3 @@ export async function copyToClipboard(text) {
   }
 }
 
-// No global assignment for security

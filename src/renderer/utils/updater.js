@@ -1,3 +1,4 @@
+import { escapeHtml } from './dom.js';
 /**
  * Renderer-side auto-update UI.
  * Listens for update events from the main process and shows
@@ -37,7 +38,7 @@ export function initUpdater() {
     showBanner(`
       <span class="update-banner-text">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Version ${data.version} is available
+        Version ${escapeHtml(data.version)} is available
       </span>
       <button id="btn-update-download" class="btn btn-sm btn-update">Download</button>
       <button id="btn-update-dismiss" class="btn btn-sm btn-ghost">Dismiss</button>
@@ -68,7 +69,7 @@ export function initUpdater() {
     showBanner(`
       <span class="update-banner-text">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-        Update check failed: ${data.message}
+        Update check failed: ${escapeHtml(data.message)}
       </span>
       <button id="btn-update-error-dismiss" class="btn btn-sm btn-ghost">Dismiss</button>
     `);

@@ -139,10 +139,33 @@ export function initModalsShell() {
       </div>
     </div>
 
+    <!-- Edit Connection Modal -->
+    <div id="edit-conn-overlay" class="modal-overlay">
+      <div class="modal glass-panel edit-conn-modal">
+        <div class="modal-header">
+          <h3>Edit Connection</h3>
+          <button id="edit-conn-close" class="btn btn-ghost btn-icon btn-sm" title="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <label class="edit-conn-label" for="edit-conn-alias">Name</label>
+          <input type="text" id="edit-conn-alias" autocomplete="off">
+          <label class="edit-conn-label" for="edit-conn-url">Connection string</label>
+          <textarea id="edit-conn-url" class="edit-conn-url" rows="4" spellcheck="false" autocomplete="off"></textarea>
+          <dl id="edit-conn-summary" class="edit-conn-summary"></dl>
+          <p id="edit-conn-error" class="modal-error"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="edit-conn-cancel" class="btn btn-ghost">Cancel</button>
+          <button id="edit-conn-save" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Loading overlay -->
     <div id="loading-overlay" class="loading-overlay">
       <div class="spinner"></div>
       <p id="loading-text">Connecting...</p>
+      <button id="loading-cancel" class="btn btn-ghost btn-sm loading-cancel-btn" type="button">Cancel</button>
     </div>
   `;
 }

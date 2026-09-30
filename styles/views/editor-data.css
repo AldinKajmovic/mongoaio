@@ -86,7 +86,7 @@
 
 .editor-doc-header {
   display: grid;
-  grid-template-columns: 1fr 200px 100px;
+  grid-template-columns: var(--tree-cols, 1fr 200px 100px);
   padding: 6px 16px;
   cursor: pointer;
   font-size: 13px;
@@ -132,7 +132,7 @@
 
 .editor-field-row {
   display: grid;
-  grid-template-columns: 24px 1fr 200px 100px;
+  grid-template-columns: 24px var(--tree-cols, 1fr 200px 100px);
   padding: 3px 16px 3px 28px;
   font-size: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.015);
@@ -221,6 +221,19 @@
 .nested-summary {
   color: var(--text-muted) !important;
   font-style: italic;
+}
+
+/* A branch holding search matches that was left collapsed (the eager-expansion
+   budget ran out). Marked so the matches inside stay findable. */
+.editor-field-row.has-hidden-matches > .editor-field-indent .nested-arrow {
+  color: var(--accent-amber);
+}
+
+.editor-field-row.has-hidden-matches > .nested-summary::after {
+  content: ' · matches inside';
+  color: var(--accent-amber);
+  font-style: normal;
+  font-size: 10px;
 }
 
 .editor-nested-children {

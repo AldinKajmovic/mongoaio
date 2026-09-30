@@ -1,4 +1,5 @@
 const mongodb = require('mongodb');
+const { guardMethod } = require('./shell-op');
 
 const {
   ObjectId, Long, Int32, Double, Decimal128, Binary, Timestamp,
@@ -67,24 +68,31 @@ function tagFindCursor(cursor, collection, filter) {
   return cursor;
 }
 
-function wrapCollection(coll) {
-  return new Proxy(coll, {
+/**
+ * @param {import('mongodb').Collection} coll
+ * @param {{ comment: string, maxTimeMS: number, signal: AbortSignal }} op  The running shell op.
+ */
+function wrapCollection(coll, op) {
+  const proxy = new Proxy(coll, {
     get(target, prop) {
       if (typeof prop === 'symbol' || RESERVED.has(prop)) return target[prop];
       // Tag find() cursors so server-side pagination can re-query by skip/limit
       // and count the full match set. Chained .sort()/.project() return the same
       // cursor instance, so the tag survives.
       if (prop === 'find') {
-        return (filter, options) => tagFindCursor(target.find(filter, options), target, filter);
+        const find = guardMethod(target.find, target, 'find', op);
+        return (filter, options) => tagFindCursor(find(filter, options), proxy, filter);
       }
       if (prop in target) {
         const v = target[prop];
-        return typeof v === 'function' ? v.bind(target) : v;
+        return typeof v === 'function' ? guardMethod(v, target, prop, op) : v;
       }
+      // Aliases call back through the proxy, so their driver calls are guarded too.
       const alias = COLLECTION_ALIASES[prop];
-      return alias ? alias(target) : undefined;
+      return alias ? alias(proxy) : undefined;
     },
   });
+  return proxy;
 }
 
 // ---------------------------------------------------------------------------
@@ -92,12 +100,17 @@ function wrapCollection(coll) {
 // the mongosh `db.*` surface on top of the driver's Db object.
 // ---------------------------------------------------------------------------
 
-function buildDbProxy(client, dbName) {
+/**
+ * @param {import('mongodb').MongoClient} client
+ * @param {string} dbName
+ * @param {{ comment: string, maxTimeMS: number, signal: AbortSignal }} op  The running shell op.
+ */
+function buildDbProxy(client, dbName, op) {
   const database = client.db(dbName);
 
   const helpers = {
-    getCollection: (name) => wrapCollection(database.collection(name)),
-    getSiblingDB: (name) => buildDbProxy(client, name),
+    getCollection: (name) => wrapCollection(database.collection(name), op),
+    getSiblingDB: (name) => buildDbProxy(client, name, op),
     getMongo: () => client,
     getName: () => dbName,
     runCommand: (cmd) => database.command(cmd),
@@ -114,14 +127,14 @@ function buildDbProxy(client, dbName) {
   return new Proxy(database, {
     get(target, prop) {
       if (typeof prop === 'symbol' || RESERVED.has(prop)) return target[prop];
-      if (prop in helpers) return helpers[prop];
+      if (Object.hasOwn(helpers, prop)) return guardMethod(helpers[prop], helpers, prop, op);
       if (prop in target) {
         const v = target[prop];
-        return typeof v === 'function' ? v.bind(target) : v;
+        return typeof v === 'function' ? guardMethod(v, target, prop, op) : v;
       }
       // Unknown identifier -> treat as a collection name (mongosh behaviour).
       if (typeof prop === 'string' && !prop.startsWith('_')) {
-        return wrapCollection(target.collection(prop));
+        return wrapCollection(target.collection(prop), op);
       }
       return undefined;
     },
@@ -143,7 +156,7 @@ function buildBsonHelpers() {
   return {
     ObjectId: oid,
     ObjectID: oid,
-    ISODate: (...a) => (a.length ? new Date(...a) : new Date()),
+    ISODate: (...a) => (a.length ? Reflect.construct(Date, a) : new Date()),
     UUID: callable(UUID),
     NumberLong: Long ? ((v) => Long.fromValue(typeof v === 'string' ? v : Number(v))) : undefined,
     NumberInt: Int32 ? ((v) => new Int32(Number(v))) : undefined,

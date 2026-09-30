@@ -1,11 +1,12 @@
 const { getClient } = require('./connection');
 const { serializeDoc, serializeDocEJSON, deserializeInput } = require('./serialize');
-const { SOCKET_TIMEOUT_MS } = require('./constants');
+const { beginOp, resolveTimeout } = require('./op-registry');
 
 const DEFAULT_PREVIEW_LIMIT = 50;
 
 async function runAggregate(side, dbName, collName, pipeline, options = {}) {
-  const coll = getClient(side).db(dbName).collection(collName);
+  const client = getClient(side);
+  const coll = client.db(dbName).collection(collName);
 
   const revived = deserializeInput(Array.isArray(pipeline) ? pipeline : []);
   const limit = Number.isFinite(options.limit) ? options.limit : DEFAULT_PREVIEW_LIMIT;
@@ -16,9 +17,18 @@ async function runAggregate(side, dbName, collName, pipeline, options = {}) {
   // Fetch one extra doc so we can flag truncation without a separate count.
   if (!hasOutput && limit > 0) finalPipeline.push({ $limit: limit + 1 });
 
-  const docs = await coll
-    .aggregate(finalPipeline, { allowDiskUse: true, maxTimeMS: SOCKET_TIMEOUT_MS })
-    .toArray();
+  const op = beginOp(options.opId, client);
+  let docs;
+  try {
+    docs = await coll.aggregate(finalPipeline, {
+      allowDiskUse: true,
+      maxTimeMS: resolveTimeout(options.maxTimeMS),
+      signal: op.signal,
+      comment: op.comment,
+    }).toArray();
+  } finally {
+    op.end();
+  }
 
   if (hasOutput) {
     return { items: [], itemsEJSON: [], count: 0, truncated: false, written: true };

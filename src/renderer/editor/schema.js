@@ -1,7 +1,8 @@
 import { state, elements } from '../utils/state.js';
 import { toast, showLoading, hideLoading } from '../utils/ui.js';
-import { escapeHtml, emptyState } from '../utils/dom.js';
+import { emptyState, escapeHtml, queryAllHtml } from '../utils/dom.js';
 import { showAuxPanel } from './editor-views.js';
+import { renderFieldRow } from './schema-field-row.js';
 
 // ---------------------------------------------------------------------------
 // Schema-analysis panel. Samples documents from the current collection and
@@ -16,28 +17,6 @@ import { showAuxPanel } from './editor-views.js';
 
 const SAMPLE_SIZES = [100, 500, 1000, 5000];
 const DEFAULT_SAMPLE_SIZE = 1000;
-
-// Maps a backend type label to the CSS modifier class that colors it. Colors
-// live in editor-schema.css (CSP: style-src 'self', no inline <style>/colors).
-const TYPE_CLASS = {
-  string: 'schema-type--string',
-  int: 'schema-type--int',
-  double: 'schema-type--double',
-  long: 'schema-type--long',
-  decimal128: 'schema-type--decimal',
-  objectId: 'schema-type--objectid',
-  date: 'schema-type--date',
-  boolean: 'schema-type--boolean',
-  array: 'schema-type--array',
-  object: 'schema-type--object',
-  null: 'schema-type--null',
-  undefined: 'schema-type--undefined',
-  binData: 'schema-type--bindata',
-};
-
-function typeClass(type) {
-  return TYPE_CLASS[type] || 'schema-type--other';
-}
 
 const FIELDS_PER_PAGE = 25;
 
@@ -79,13 +58,13 @@ function buildDom() {
     </div>
   `;
 
-  const analyzeBtn = document.getElementById('btn-schema-analyze');
+  const analyzeBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-schema-analyze'));
   if (analyzeBtn) analyzeBtn.addEventListener('click', () => runAnalysis());
 
-  const search = document.getElementById('schema-search');
+  const search = /** @type {HTMLInputElement | null} */ (document.getElementById('schema-search'));
   if (search) {
-    search.addEventListener('input', (e) => {
-      filterText = e.target.value.trim().toLowerCase();
+    search.addEventListener('input', () => {
+      filterText = search.value.trim().toLowerCase();
       page = 1;
       renderFields();
     });
@@ -117,7 +96,7 @@ function hintNoSelection() {
 }
 
 function getSampleSize() {
-  const sel = document.getElementById('schema-sample-size');
+  const sel = /** @type {HTMLSelectElement | null} */ (document.getElementById('schema-sample-size'));
   const v = sel ? parseInt(sel.value, 10) : DEFAULT_SAMPLE_SIZE;
   return Number.isFinite(v) && v > 0 ? v : DEFAULT_SAMPLE_SIZE;
 }
@@ -145,7 +124,7 @@ async function runAnalysis() {
 
   const sampleSize = getSampleSize();
   analyzing = true;
-  const analyzeBtn = document.getElementById('btn-schema-analyze');
+  const analyzeBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-schema-analyze'));
   if (analyzeBtn) analyzeBtn.disabled = true;
   setSummary('Analyzing…');
   setBody(schemaLoadingHtml());
@@ -229,15 +208,15 @@ function renderFields() {
 
   // Widths/indentation are applied programmatically (not via inline style=""
   // in the HTML string) so nothing here ever depends on 'unsafe-inline' CSS.
-  document.querySelectorAll('.schema-field-path[data-depth]').forEach((elx) => {
+  queryAllHtml('.schema-field-path[data-depth]').forEach((elx) => {
     const depth = parseInt(elx.dataset.depth, 10) || 0;
     if (depth > 0) elx.style.paddingLeft = `${depth * 16}px`;
   });
-  document.querySelectorAll('.schema-presence-fill[data-pct]').forEach((elx) => {
+  queryAllHtml('.schema-presence-fill[data-pct]').forEach((elx) => {
     const pct = Math.max(0, Math.min(100, parseFloat(elx.dataset.pct) || 0));
     elx.style.width = `${pct}%`;
   });
-  document.querySelectorAll('.schema-type-seg[data-pct]').forEach((elx) => {
+  queryAllHtml('.schema-type-seg[data-pct]').forEach((elx) => {
     const pct = Math.max(0, Math.min(100, parseFloat(elx.dataset.pct) || 0));
     elx.style.width = `${pct}%`;
   });
@@ -259,7 +238,7 @@ function renderPagination(totalFields, totalPages, start, shown) {
 
   setPagination(`
     <button class="btn btn-ghost btn-sm" id="schema-page-prev" ${page <= 1 ? 'disabled' : ''}>&#8249; Prev</button>
-    <span class="schema-page-info">Fields ${start + 1}–${start + shown} of ${totalFields} · page ${page}/${totalPages}</span>
+    <span class="schema-page-info">Fields ${escapeHtml(start + 1)}–${escapeHtml(start + shown)} of ${escapeHtml(totalFields)} · page ${escapeHtml(page)}/${escapeHtml(totalPages)}</span>
     <button class="btn btn-ghost btn-sm" id="schema-page-next" ${page >= totalPages ? 'disabled' : ''}>Next &#8250;</button>
   `);
 
@@ -267,52 +246,6 @@ function renderPagination(totalFields, totalPages, start, shown) {
   const next = document.getElementById('schema-page-next');
   if (prev) prev.addEventListener('click', () => { if (page > 1) { page--; renderFields(); } });
   if (next) next.addEventListener('click', () => { if (page < totalPages) { page++; renderFields(); } });
-}
-
-function renderFieldRow(field) {
-  const path = field.path || '';
-  const presence = Math.max(0, Math.min(100, Math.round(field.presence || 0)));
-  const types = Array.isArray(field.types) ? field.types : [];
-  const samples = Array.isArray(field.samples) ? field.samples : [];
-  const optional = presence < 100;
-
-  const segments = path.split('.');
-  const depth = segments.length - 1;
-  const leaf = segments[segments.length - 1];
-  const parentPrefix = depth > 0 ? segments.slice(0, -1).join('.') + '.' : '';
-
-  const typeSegs = types.map((t) =>
-    `<span class="schema-type-seg ${typeClass(t.type)}" data-pct="${t.percent}" title="${escapeHtml(String(t.type))} — ${t.percent}%"></span>`
-  ).join('');
-
-  const typeChips = types.map((t) =>
-    `<span class="schema-type-chip ${typeClass(t.type)}">
-       <span class="schema-type-dot"></span>${escapeHtml(String(t.type))}
-       <span class="schema-type-pct">${t.percent}%</span>
-     </span>`
-  ).join('');
-
-  const samplesHtml = samples.length
-    ? `<div class="schema-samples">${samples.map((s) => `<code class="schema-sample-val" title="${escapeHtml(String(s))}">${escapeHtml(String(s))}</code>`).join('')}</div>`
-    : '';
-
-  return `
-    <div class="schema-field-row">
-      <div class="schema-field-main">
-        <span class="schema-field-path" data-depth="${depth}">${parentPrefix ? `<span class="schema-field-parent">${escapeHtml(parentPrefix)}</span>` : ''}<span class="schema-field-leaf">${escapeHtml(leaf)}</span></span>
-        <div class="schema-presence" title="${presence}% of sampled documents contain this field">
-          <div class="schema-presence-track">
-            <div class="schema-presence-fill${optional ? ' schema-presence-fill--optional' : ''}" data-pct="${presence}"></div>
-          </div>
-          <span class="schema-presence-label">${presence}%</span>
-          ${optional ? '<span class="schema-optional-badge">optional</span>' : ''}
-        </div>
-      </div>
-      <div class="schema-type-bar">${typeSegs}</div>
-      <div class="schema-type-chips">${typeChips}</div>
-      ${samplesHtml}
-    </div>
-  `;
 }
 
 /** Wire the Schema nav button: lazily build the panel, show it, analyze. */

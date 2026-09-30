@@ -1,3 +1,4 @@
+import { escapeHtml } from '../utils/dom.js';
 import { state } from '../utils/state.js';
 import { toast, showLoading, hideLoading } from '../utils/ui.js';
 import { renderEditorTree } from './tree-renderer.js';
@@ -92,13 +93,13 @@ export async function pasteIntoNewDatabase(alias) {
 export function refreshDatabaseNode(dbName) {
   const alias = state.editor.alias;
   const dbNode = document.querySelector(
-    `.tree-database[data-db="${dbName}"][data-alias="${alias}"]`
+    `.tree-database[data-db="${CSS.escape(dbName)}"][data-alias="${CSS.escape(alias)}"]`
   );
   if (dbNode) {
     const ch = dbNode.querySelector('.tree-children');
     if (ch) {
       ch.innerHTML = '<div class="tree-node" data-type="placeholder"' +
-        ` data-alias="${alias}" data-db="${dbName}" data-action="load-collections">` +
+        ` data-alias="${escapeHtml(alias)}" data-db="${escapeHtml(dbName)}" data-action="load-collections">` +
         '<div class="tree-node-header tree-leaf">' +
         '<span class="tree-node-label u-text-muted u-italic u-font-sans">Click to load collections...</span>' +
         '</div></div>';

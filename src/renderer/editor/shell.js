@@ -3,6 +3,7 @@ import { toast } from '../utils/ui.js';
 import { appendShellResult } from './shell-renderer.js';
 import { initShellTabs } from './shell-tabs.js';
 import { activateView } from './editor-views.js';
+import { runCancellable, describeQueryError } from '../utils/query-timeout.js';
 
 /**
  * Initialize Shell Tab Event Listeners
@@ -186,9 +187,10 @@ async function executeBlock(text) {
   const dbName = state.editor.db;
 
   try {
-    const res = await window.api.shellEval(side, dbName, code);
+    const res = await runCancellable('Running shell command…',
+      (opts) => window.api.shellEval(side, dbName, code, opts));
     if (res.error) {
-      appendShellResult(text, res.error, 'error');
+      appendShellResult(text, describeQueryError(res.error) || 'Cancelled', 'error');
       return;
     }
 

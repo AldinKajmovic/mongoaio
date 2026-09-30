@@ -1,5 +1,5 @@
 const { getClient } = require('./connection');
-const { SOCKET_TIMEOUT_MS } = require('./constants');
+const { QUERY_TIMEOUT_DEFAULT_MS } = require('./constants');
 
 const MAX_DEPTH = 3;              // how deep to descend into nested objects
 const MAX_SAMPLE_VALUES = 5;      // distinct example values kept per field
@@ -74,10 +74,11 @@ async function analyzeSchema(side, dbName, collName, sampleSize = 1000) {
   const coll = getClient(side).db(dbName).collection(collName);
   const size = Math.max(1, Math.min(10000, Number(sampleSize) || 1000));
 
-  const totalCount = await coll.countDocuments({}, { maxTimeMS: SOCKET_TIMEOUT_MS });
+  const totalCount = await coll.estimatedDocumentCount({ maxTimeMS: QUERY_TIMEOUT_DEFAULT_MS })
+    .catch(() => coll.countDocuments({}, { maxTimeMS: QUERY_TIMEOUT_DEFAULT_MS }));
 
   const docs = await coll
-    .aggregate([{ $sample: { size } }], { allowDiskUse: true, maxTimeMS: SOCKET_TIMEOUT_MS })
+    .aggregate([{ $sample: { size } }], { allowDiskUse: true, maxTimeMS: QUERY_TIMEOUT_DEFAULT_MS })
     .toArray();
 
   const stats = new Map();

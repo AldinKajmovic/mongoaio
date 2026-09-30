@@ -2,6 +2,7 @@ import { state, elements } from '../utils/state.js';
 import { toast } from '../utils/ui.js';
 import { prettyJson } from '../utils/dom.js';
 import { showAuxPanel } from './editor-views.js';
+import { newOpId, cancellableOptions, describeQueryError } from '../utils/query-timeout.js';
 import { TEMPLATES, TEMPLATE_SET, stageSignature, assemble } from './aggregation-operators.js';
 import {
   buildDom,
@@ -18,7 +19,7 @@ import {
 // view in ./aggregation-dom.js.
 
 let built = false;
-let stages = [];      // [{ id, operator, body, enabled, els, open, loading, lastBody }]
+const stages = [];      // [{ id, operator, body, enabled, els, open, loading, lastBody }]
 let limit = 25;
 let nextId = 1;
 
@@ -89,7 +90,7 @@ function refreshContext() {
 
 function disableToolbar(disabled) {
   ['agg-run', 'agg-add', 'agg-copy'].forEach((id) => {
-    const b = document.getElementById(id);
+    const b = /** @type {HTMLButtonElement | null} */ (document.getElementById(id));
     if (b) b.disabled = disabled;
   });
 }
@@ -191,15 +192,21 @@ async function previewStage(stage) {
 
   stage.loading = true;
   stage.els.previewBtn.disabled = true;
-  panel.innerHTML = `<div class="agg-preview-loading">Running…</div>`;
+  const opId = newOpId();
+  panel.innerHTML = `<div class="agg-preview-loading">Running… <button class="btn btn-ghost btn-sm agg-preview-cancel" type="button">Cancel</button></div>`;
+  panel.querySelector('.agg-preview-cancel').addEventListener('click', (e) => {
+    e.currentTarget.disabled = true;
+    window.api.cancelOp(opId).catch(() => {});
+  });
 
   const side = state.editor.side || 'source';
   try {
-    const res = await window.api.runAggregate(side, db, coll, pipeline, { limit });
+    const res = await window.api.runAggregate(side, db, coll, pipeline, { limit, ...cancellableOptions(opId) });
     stage.loading = false;
     stage.els.previewBtn.disabled = false;
     if (!res || res.error) {
-      renderPreviewError(panel, (res && res.error) ? res.error : 'Aggregation failed', onPreviewClose);
+      const message = res && res.error ? describeQueryError(res.error) : 'Aggregation failed';
+      renderPreviewError(panel, message || 'Aggregation cancelled', onPreviewClose);
       return;
     }
     stage.lastBody = stageSignature(stage);

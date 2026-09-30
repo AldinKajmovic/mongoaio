@@ -1,6 +1,16 @@
 import { escapeHtml, highlightText } from '../utils/dom.js';
 import { syncTreeRowColumns, setupTableColumnResize } from './resize.js';
-import { getFieldType, isExpandable, renderNestedChildren, applyDepthIndent } from './value-viewer.js';
+import {
+  getFieldType, isExpandable, renderNestedChildren, applyDepthIndent,
+  subtreeMatchesSearch, resetAutoExpandBudget, allocAutoExpandBudget,
+  MAX_AUTO_EXPANDED_ROWS
+} from './value-viewer.js';
+import { stashValue, previewJson } from './value-store.js';
+import { icon } from '../utils/icons.js';
+
+const CELL_PREVIEW_CHARS = 50;
+const TITLE_PREVIEW_CHARS = 200;
+const MIN_PER_DOC_EXPAND_ROWS = 200;
 
 /**
  * Pretty-print one document as escaped (optionally search-highlighted) HTML for
@@ -19,12 +29,10 @@ export function renderJsonView(items, sq) {
   if (items.length === 0) {
     jsonView.innerHTML = '<pre class="u-m-0 u-p-12 u-font-mono u-font-small u-text-muted">[]</pre>';
   } else {
-    // Copy-all bar: exports every displayed document as one Extended JSON array,
-    // ready to paste into a file or mongoimport (ObjectIds keep their $oid form).
     const toolbar = `
       <div class="editor-json-toolbar">
         <button class="btn btn-ghost btn-sm btn-copy-json" title="Copy all documents as Extended JSON">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          ${icon('copy')}
           Copy JSON
         </button>
       </div>`;
@@ -32,7 +40,7 @@ export function renderJsonView(items, sq) {
       <div class="editor-json-doc-item" data-index="${i}" title="Double click to edit">
         <div class="doc-actions-overlay">
           <button class="btn-delete-doc btn-icon btn-sm" data-index="${i}" title="Delete document">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            ${icon('trash')}
           </button>
         </div>
         <pre class="u-m-0 u-p-12 u-font-mono u-font-small u-text-muted">${formatDocJson(doc, sq)}</pre>
@@ -45,15 +53,19 @@ export function renderTreeView(items, sq, expandedDocs) {
   const treeRows = document.querySelector('#editor-tree-rows');
   if (!treeRows) return;
 
+  resetAutoExpandBudget();
+  const perDocBudget = Math.max(
+    MIN_PER_DOC_EXPAND_ROWS,
+    Math.floor(MAX_AUTO_EXPANDED_ROWS / Math.max(1, items.length))
+  );
+
   if (items.length === 0) {
     treeRows.innerHTML = '<div class="u-p-20 u-text-center u-text-muted">No documents found</div>';
   } else {
     treeRows.innerHTML = items.map((doc, i) => {
+      allocAutoExpandBudget(perDocBudget);
       const idStr = String(doc._id);
-      const docMatchesSearch = sq && Object.entries(doc).some(([key, val]) => {
-        const valStr = typeof val === 'object' ? JSON.stringify(val) : String(val);
-        return key.toLowerCase().includes(sq) || valStr.toLowerCase().includes(sq);
-      });
+      const docMatchesSearch = !!sq && subtreeMatchesSearch(doc, sq);
       const expanded = docMatchesSearch || expandedDocs.has(idStr);
       return `
       <div class="editor-doc-row${expanded ? ' expanded' : ''}" data-doc-index="${i + 1}">
@@ -66,7 +78,7 @@ export function renderTreeView(items, sq, expandedDocs) {
           <div class="u-flex u-items-center u-gap-8">
             <span class="editor-doc-type">Document</span>
             <button class="btn-delete-doc btn-icon btn-sm" data-index="${i}" title="Delete document">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+              ${icon('trash')}
             </button>
           </div>
         </div>
@@ -76,8 +88,6 @@ export function renderTreeView(items, sq, expandedDocs) {
       </div>
     `}).join('');
   }
-  // When searching, branches are rendered eagerly — apply depth-based
-  // indentation so auto-expanded nested rows align correctly.
   if (sq) applyDepthIndent(treeRows);
   const header = document.getElementById('editor-tree-header');
   if (header) syncTreeRowColumns(header.style.gridTemplateColumns);
@@ -96,16 +106,20 @@ export function renderTableView(items, sq, skip) {
     items.forEach(doc => Object.keys(doc).forEach(k => allKeys.add(k)));
     const columns = ['_id', ...Array.from(allKeys).filter(k => k !== '_id')];
 
+    // SECURITY: column names come from document keys — escape them before they
     tableHead.innerHTML = '<th class="editor-table-th editor-table-th-num">#<span class="col-resize-handle"></span></th>' +
-      columns.map(col => `<th class="editor-table-th" data-col="${col}" draggable="true" data-field="${col}">${col}<span class="col-resize-handle"></span></th>`).join('');
+      columns.map(col => {
+        const colAttr = escapeHtml(col);
+        return `<th class="editor-table-th" data-col="${colAttr}" draggable="true" data-field="${colAttr}">${colAttr}<span class="col-resize-handle"></span></th>`;
+      }).join('');
 
     tableBody.innerHTML = items.map((doc, i) => `
       <tr class="editor-table-row" data-index="${i}">
         <td class="editor-table-td editor-table-td-num">
           <div class="u-flex u-items-center u-gap-4">
-            <span>${i + 1 + skip}</span>
+            <span>${escapeHtml(i + 1 + skip)}</span>
             <button class="btn-delete-doc btn-icon btn-sm u-opacity-0 hover-opacity-100" data-index="${i}" title="Delete document">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              ${icon('trash', 10)}
             </button>
           </div>
         </td>
@@ -114,27 +128,31 @@ export function renderTableView(items, sq, skip) {
       const type = getFieldType(col, val);
       const expandable = isExpandable(val);
 
-      let displayVal = val === undefined ? '' : (typeof val === 'object' ? JSON.stringify(val) : String(val));
-      const fullVal = val === undefined ? '' : JSON.stringify(val);
-      const isTruncated = displayVal.length > 50;
-      if (isTruncated) displayVal = displayVal.substring(0, 50) + '...';
+      const preview = val === undefined ? '' : previewJson(val, TITLE_PREVIEW_CHARS + 1);
+      const titleText = preview.length > TITLE_PREVIEW_CHARS
+        ? preview.slice(0, TITLE_PREVIEW_CHARS) + '…'
+        : preview;
+      const isTruncated = preview.length > CELL_PREVIEW_CHARS;
+      const displayVal = isTruncated ? preview.slice(0, CELL_PREVIEW_CHARS) + '...' : preview;
       const cellHtml = sq ? highlightText(displayVal, sq) : escapeHtml(displayVal);
       const showExpand = expandable || isTruncated;
+      const colAttr = escapeHtml(col);
+      const valueRefHtml = val === undefined ? '' : ` data-value-ref="${escapeHtml(stashValue(val))}"`;
       return `
             <td class="editor-table-td${showExpand ? ' has-expandable' : ''}" draggable="true"
-                title="${val === undefined ? '' : JSON.stringify(val).replace(/"/g, '&quot;')}"
-                data-index="${i}" data-col="${col}" data-field="${col}" data-type="${type}"
-                data-value='${escapeHtml(fullVal)}'>
+                title="${escapeHtml(titleText)}"
+                data-index="${i}" data-col="${colAttr}" data-field="${colAttr}" data-type="${escapeHtml(type)}"
+                ${valueRefHtml}>
               <div class="table-cell-content">
                 <span class="cell-text">${cellHtml}</span>
                 ${showExpand ? `
-                  <button class="btn-expand-cell" data-value='${escapeHtml(fullVal)}' title="View full value">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                  <button class="btn-expand-cell"${valueRefHtml} title="View full value">
+                    ${icon('expand')}
                   </button>
                 ` : ''}
                 ${val !== undefined ? `
-                  <button class="btn-copy-cell" data-value='${escapeHtml(fullVal)}' title="Copy full value">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <button class="btn-copy-cell"${valueRefHtml} title="Copy full value">
+                    ${icon('copy')}
                   </button>
                 ` : ''}
               </div>

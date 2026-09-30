@@ -1,6 +1,6 @@
 import { elements } from '../utils/state.js';
 import { toast } from '../utils/ui.js';
-import { formatValue, getNestedValue } from '../utils/dom.js';
+import { formatValue, getNestedValue, escapeHtml } from '../utils/dom.js';
 
 let modalCallback = null;
 
@@ -31,8 +31,8 @@ export function openSyncModal(title, fields, values, initialSelection, onConfirm
       ${fields.map(f => `
         <div class="sync-modal-item">
           <label>
-            <input type="checkbox" class="sync-modal-checkbox" data-field="${f}" ${initialSelection.includes(f) ? 'checked' : ''}>
-            <span class="sync-modal-field-name">${f}</span>
+            <input type="checkbox" class="sync-modal-checkbox" data-field="${escapeHtml(f)}" ${initialSelection.includes(f) ? 'checked' : ''}>
+            <span class="sync-modal-field-name">${escapeHtml(f)}</span>
             <div class="sync-modal-preview">${formatValue(getNestedValue(values, f))}</div>
           </label>
         </div>
@@ -40,8 +40,11 @@ export function openSyncModal(title, fields, values, initialSelection, onConfirm
     </div>
   `;
 
-  document.getElementById('sync-all-fields').onchange = (e) => {
-    elements.modalSyncList.querySelectorAll('.sync-modal-checkbox').forEach(cb => cb.checked = e.target.checked);
+  const syncAll = /** @type {HTMLInputElement} */ (document.getElementById('sync-all-fields'));
+  syncAll.onchange = () => {
+    elements.modalSyncList.querySelectorAll('.sync-modal-checkbox').forEach((cb) => {
+      /** @type {HTMLInputElement} */ (cb).checked = syncAll.checked;
+    });
   };
 
   modalCallback = () => {

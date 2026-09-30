@@ -3,15 +3,10 @@ import { showLoading, hideLoading, toast } from '../utils/ui.js';
 import { getNestedValue, setNestedValue, escapeHtml } from '../utils/dom.js';
 import { renderPrimitive } from '../utils/json-tree.js';
 import { resolveDb } from './document-crud.js';
+import { compareDoc, compareWriteId } from './compare-ids.js';
 
 // In-place editing of a single leaf value inside a JSON tree, so editing a
 // nested field no longer means opening (and scrolling through) the whole field.
-
-function getDoc(side, docId) {
-  const item = state.docComparison?.items.find(d => d._id === docId);
-  if (!item) return null;
-  return state.activeDocTab === 'different' ? (side === 'source' ? item.source : item.target) : item;
-}
 
 function startEditLeaf(leaf) {
   if (!leaf || leaf.classList.contains('jt-editing')) return;
@@ -19,7 +14,7 @@ function startEditLeaf(leaf) {
   if (!container) return;
 
   const { side, docId } = container.dataset;
-  const current = getNestedValue(getDoc(side, docId), leaf.dataset.leafPath);
+  const current = getNestedValue(compareDoc(docId, side), leaf.dataset.leafPath);
 
   leaf.classList.add('jt-editing');
   const valSpan = leaf.querySelector('.jt-leaf-val');
@@ -61,7 +56,7 @@ async function saveLeaf(leaf) {
   try { newValue = JSON.parse(input.value); } catch { newValue = input.value; }
 
   showLoading('Saving field...');
-  const result = await window.api.patchDocument(side, resolveDb(side), state.currentColl, docId, { [path]: newValue });
+  const result = await window.api.patchDocument(side, resolveDb(side), state.currentColl, compareWriteId(docId), { [path]: newValue });
   hideLoading();
 
   if (result.error) {
@@ -70,7 +65,7 @@ async function saveLeaf(leaf) {
   }
   // Keep local state in sync so re-renders/compares stay correct, then close
   // the editor in place — no full reload (which would jump the scroll position).
-  const doc = getDoc(side, docId);
+  const doc = compareDoc(docId, side);
   if (doc) setNestedValue(doc, path, newValue);
   finishLeaf(leaf, newValue);
 
@@ -79,7 +74,7 @@ async function saveLeaf(leaf) {
   // now differs, it should light up.
   if (state.activeDocTab === 'different') {
     const otherSide = side === 'source' ? 'target' : 'source';
-    const counterpart = getNestedValue(getDoc(otherSide, docId), path);
+    const counterpart = getNestedValue(compareDoc(docId, otherSide), path);
     updateDiffChain(leaf, path, JSON.stringify(counterpart) !== JSON.stringify(newValue));
   }
   toast('Field updated', 'success');
@@ -135,6 +130,6 @@ elements.docContent.addEventListener('click', (e) => {
     const leaf = cancelBtn.closest('.jt-leaf');
     const container = leaf.closest('.diff-field-value');
     const { side, docId } = container.dataset;
-    finishLeaf(leaf, getNestedValue(getDoc(side, docId), leaf.dataset.leafPath));
+    finishLeaf(leaf, getNestedValue(compareDoc(docId, side), leaf.dataset.leafPath));
   }
 });

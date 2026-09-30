@@ -1,3 +1,4 @@
+import { escapeHtml } from '../utils/dom.js';
 import { elements } from '../utils/state.js';
 
 // ---------------------------------------------------------------------------
@@ -46,8 +47,8 @@ function legendHtml(series) {
   return series.map((s) =>
     `<span class="metrics-legend-item">
        <span class="metrics-swatch ${SWATCH_CLASS[s.color] || ''}"></span>
-       <span class="metrics-legend-label">${s.label}</span>
-       <span class="metrics-legend-val" data-val="${s.key}">0</span>
+       <span class="metrics-legend-label">${escapeHtml(s.label)}</span>
+       <span class="metrics-legend-val" data-val="${escapeHtml(s.key)}">0</span>
      </span>`
   ).join('');
 }
@@ -55,10 +56,10 @@ function legendHtml(series) {
 function chartCard(title, canvasId, series, maxId) {
   return `
     <section class="metrics-card">
-      <h3 class="metrics-card-title">${title}</h3>
+      <h3 class="metrics-card-title">${escapeHtml(title)}</h3>
       <div class="metrics-chart-wrap">
-        <span class="metrics-chart-max" id="${maxId}"></span>
-        <canvas id="${canvasId}" class="metrics-canvas"></canvas>
+        <span class="metrics-chart-max" id="${escapeHtml(maxId)}"></span>
+        <canvas id="${escapeHtml(canvasId)}" class="metrics-canvas"></canvas>
       </div>
       <div class="metrics-legend">${legendHtml(series)}</div>
     </section>`;
@@ -84,7 +85,7 @@ export function buildDom(onPause) {
       <div class="metrics-grid">
         <div class="metrics-col">
           ${chartCard('OPERATIONS', 'metrics-ops-chart', OPS_SERIES, 'metrics-ops-max')}
-          ${chartCard('READ &amp; WRITE', 'metrics-rw-chart', RW_SERIES, 'metrics-rw-max')}
+          ${chartCard('READ & WRITE', 'metrics-rw-chart', RW_SERIES, 'metrics-rw-max')}
           ${chartCard('NETWORK', 'metrics-net-chart', NET_SERIES, 'metrics-net-max')}
           ${chartCard('MEMORY', 'metrics-mem-chart', MEM_SERIES, 'metrics-mem-max')}
         </div>

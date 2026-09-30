@@ -2,6 +2,7 @@ import { $ } from '../utils/state.js';
 import { showLoading, hideLoading, toast } from '../utils/ui.js';
 import { renderEditorTree } from '../editor/tree-renderer.js';
 import { buildCollectionOptions } from './add-collection-options.js';
+import { queryAllHtml } from '../utils/dom.js';
 
 let currentAlias = null;
 let currentDb = null;
@@ -25,8 +26,8 @@ export function closeAddCollectionModal() {
 
 function switchTab(tabName) {
   activeTab = tabName;
-  const tabs = document.querySelectorAll('.add-coll-tab');
-  const panels = document.querySelectorAll('.add-coll-panel');
+  const tabs = queryAllHtml('.add-coll-tab');
+  const panels = queryAllHtml('.add-coll-panel');
   tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
   panels.forEach(p => {
     p.style.display = p.id.endsWith(`-${tabName}`) ? '' : 'none';
@@ -38,7 +39,7 @@ function switchTab(tabName) {
 }
 
 function handleTypeChange() {
-  const selected = document.querySelector('input[name="add-coll-type"]:checked');
+  const selected = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="add-coll-type"]:checked'));
   if (!selected) return;
   const type = selected.value;
   const sections = {
@@ -121,7 +122,7 @@ function resetForm() {
   activeTab = 'options';
   $('#add-coll-name').value = '';
   // Reset radios
-  const defaultRadio = document.querySelector('input[name="add-coll-type"][value="default"]');
+  const defaultRadio = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="add-coll-type"][value="default"]'));
   if (defaultRadio) defaultRadio.checked = true;
   handleTypeChange();
   // Reset fields

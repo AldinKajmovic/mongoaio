@@ -1,20 +1,21 @@
-const { ObjectId } = require('mongodb');
+const { ObjectId, BSON } = require('mongodb');
 const { getClient } = require('./connection');
 const { serializeDoc, serializeDocEJSON } = require('./serialize');
-const { DEFAULT_QUERY_LIMIT, SOCKET_TIMEOUT_MS } = require('./constants');
+const { DEFAULT_QUERY_LIMIT } = require('./constants');
+const { beginOp, resolveTimeout } = require('./op-registry');
 
-/**
- * Recursively revive MongoDB Extended JSON markers that can't survive the
- * IPC bridge as native BSON types. Currently handles `{ "$oid": "..." }`,
- * which the renderer emits for `ObjectId("...")` syntax, converting it to a
- * real ObjectId so the query matches by type — never by string.
- *
- * Plain strings are left as-is: a value is only treated as an ObjectId when
- * the user explicitly wraps it in ObjectId(...).
- *
- * @param {*} value
- * @returns {*}
- */
+/** Revive the ObjectId/ISODate/NumberLong/NumberDecimal markers the query bar emits. */
+const TYPE_MARKERS = new Set(['$date', '$numberLong', '$numberDecimal', '$numberInt', '$numberDouble', '$binary', '$uuid']);
+
+function reviveMarker(marker) {
+  const [key] = Object.keys(marker);
+  const revived = BSON.EJSON.deserialize({ v: marker }, { relaxed: false }).v;
+  if (key === '$date' && (!(revived instanceof Date) || Number.isNaN(revived.getTime()))) {
+    throw new Error(`Invalid date: ${JSON.stringify(marker.$date)}`);
+  }
+  return revived;
+}
+
 function reviveExtendedJson(value) {
   if (Array.isArray(value)) return value.map(reviveExtendedJson);
   if (value !== null && typeof value === 'object') {
@@ -26,6 +27,7 @@ function reviveExtendedJson(value) {
       }
       return new ObjectId(oid);
     }
+    if (keys.length === 1 && TYPE_MARKERS.has(keys[0])) return reviveMarker(value);
     const out = {};
     for (const key of keys) out[key] = reviveExtendedJson(value[key]);
     return out;
@@ -59,16 +61,34 @@ async function listCollections(side, dbName) {
   }
 }
 
+/** Count documents matching a filter. */
+async function countMatching(coll, filter, opts) {
+  if (Object.keys(filter).length === 0) {
+    try {
+      return await coll.estimatedDocumentCount({ maxTimeMS: opts.maxTimeMS });
+    } catch (_) { /* fall through */ }
+  }
+  return coll.countDocuments(filter, opts);
+}
+
 async function executeQuery(side, dbName, collName, options = {}) {
   const { filter = {}, sort = {}, projection = {}, limit = DEFAULT_QUERY_LIMIT, skip = 0 } = options;
   const normalizedFilter = reviveExtendedJson(filter);
   const client = getClient(side);
   const coll = client.db(dbName).collection(collName);
+  const maxTimeMS = resolveTimeout(options.maxTimeMS);
+  const op = beginOp(options.opId, client);
+  const opOpts = { maxTimeMS, signal: op.signal, comment: op.comment };
 
-  const [items, total] = await Promise.all([
-    coll.find(normalizedFilter, { projection }).sort(sort).skip(skip).limit(limit).maxTimeMS(SOCKET_TIMEOUT_MS).toArray(),
-    coll.countDocuments(normalizedFilter, { maxTimeMS: SOCKET_TIMEOUT_MS })
-  ]);
+  let items, total;
+  try {
+    [items, total] = await Promise.all([
+      coll.find(normalizedFilter, { projection, ...opOpts }).sort(sort).skip(skip).limit(limit).toArray(),
+      countMatching(coll, normalizedFilter, opOpts),
+    ]);
+  } finally {
+    op.end();
+  }
 
   return {
     items: items.map(serializeDoc),

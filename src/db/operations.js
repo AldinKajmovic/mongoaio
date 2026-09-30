@@ -1,84 +1,106 @@
-const { ObjectId } = require('mongodb');
 const { getClient } = require('./connection');
-const { serializeDoc, deserializeInput } = require('./serialize');
+const { serializeDocEJSON, deserializeInput } = require('./serialize');
+const { buildIdQuery, coerceNewId } = require('./id-query');
+const { diffToUpdate, preserveTypes, valueAtPath } = require('./type-preserve');
 
-function buildIdQuery(docId) {
-  // An id may arrive as a plain string, or as Extended JSON ({"$oid":"..."})
-  // from the JSON view. Revive the latter to a real ObjectId first.
-  const revived = deserializeInput(docId);
-  if (revived instanceof ObjectId) return { _id: revived };
-  const isEligible = ObjectId.isValid(revived) && (String(revived) === revived);
-  return { _id: isEligible ? new ObjectId(revived) : revived };
+// Raw reads for copy/sync keep Int32/Double/Long exact.
+const RAW_READ = { promoteValues: false };
+
+function collection(side, dbName, collName) {
+  return getClient(side).db(dbName).collection(collName);
 }
 
-/**
- * Get a single document by _id.
- */
+/** One document by _id, as Extended JSON (editable without losing types). */
 async function getDocument(side, dbName, collName, docId) {
-  const client = getClient(side);
-  const query = buildIdQuery(docId);
-  const doc = await client.db(dbName).collection(collName).findOne(query);
-  return doc ? serializeDoc(doc) : null;
+  const doc = await collection(side, dbName, collName).findOne(buildIdQuery(docId));
+  return doc ? serializeDocEJSON(doc) : null;
 }
 
 async function insertDocument(side, dbName, collName, doc) {
-  const client = getClient(side);
   // Revive Extended JSON ($oid/$date/...) so pasted docs keep their BSON types.
-  doc = deserializeInput(doc);
-  // Convert _id string back to ObjectId if valid
-  if (doc._id) {
-    const { _id } = buildIdQuery(doc._id);
-    doc._id = _id;
-  }
-  const result = await client.db(dbName).collection(collName).insertOne(doc);
-  return { insertedId: result.insertedId.toString() };
+  const revived = deserializeInput(doc);
+  if (revived._id !== undefined) revived._id = coerceNewId(revived._id);
+  const result = await collection(side, dbName, collName).insertOne(revived);
+  const id = result.insertedId;
+  const isCompound = id !== null && typeof id === 'object' && !id._bsontype;
+  return { insertedId: isCompound ? JSON.stringify(serializeDocEJSON({ id }).id) : String(id) };
 }
 
+/** Save an edited document as a diff against the stored one. */
 async function updateDocument(side, dbName, collName, docId, updates) {
-  const client = getClient(side);
-  const query = buildIdQuery(docId);
-  // Remove _id from updates to avoid immutable field error, then revive any
-  // Extended JSON markers in the edited fields back into BSON types.
-  const { _id, ...fieldsToUpdate } = updates;
-  const result = await client.db(dbName).collection(collName).replaceOne(query, deserializeInput(fieldsToUpdate));
+  const coll = collection(side, dbName, collName);
+  const stored = await coll.findOne(buildIdQuery(docId), RAW_READ);
+  if (!stored) throw new Error('Document not found — it may have been deleted.');
+
+  const { _id, ...fields } = updates;
+  const { $set, $unset } = diffToUpdate(stored, fields);
+  const update = {};
+  if (Object.keys($set).length) update.$set = $set;
+  if (Object.keys($unset).length) update.$unset = $unset;
+  if (!update.$set && !update.$unset) return { modifiedCount: 0 };
+
+  const result = await coll.updateOne({ _id: stored._id }, update);
   return { modifiedCount: result.modifiedCount };
 }
 
 async function deleteDocument(side, dbName, collName, docId) {
-  const client = getClient(side);
-  const query = buildIdQuery(docId);
-  const result = await client.db(dbName).collection(collName).deleteOne(query);
+  const result = await collection(side, dbName, collName).deleteOne(buildIdQuery(docId));
   return { deletedCount: result.deletedCount };
 }
 
+/** $set the given dotted paths, coercing each value to the stored field's type. */
 async function patchDocument(side, dbName, collName, docId, updates) {
-  const client = getClient(side);
-  const query = buildIdQuery(docId);
-  const { _id, ...fieldsToUpdate } = updates;
-  const result = await client.db(dbName).collection(collName).updateOne(query, { $set: deserializeInput(fieldsToUpdate) });
+  const coll = collection(side, dbName, collName);
+  const stored = await coll.findOne(buildIdQuery(docId), RAW_READ);
+  if (!stored) throw new Error('Document not found — it may have been deleted.');
+
+  const $set = {};
+  for (const [path, value] of Object.entries(updates)) {
+    if (path === '_id') continue;
+    $set[path] = preserveTypes(valueAtPath(stored, path), value);
+  }
+  if (Object.keys($set).length === 0) return { modifiedCount: 0 };
+  const result = await coll.updateOne({ _id: stored._id }, { $set });
   return { modifiedCount: result.modifiedCount };
 }
 
-async function copyDocument(fromSide, toSide, dbName, collName, docId) {
-  const doc = await getDocument(fromSide, dbName, collName, docId);
+/** Copy one document between sides (upsert by _id). */
+async function copyDocument(fromSide, toSide, fromDb, collName, docId, toDb = fromDb) {
+  const doc = await collection(fromSide, fromDb, collName).findOne(buildIdQuery(docId), RAW_READ);
   if (!doc) throw new Error('Document not found');
-  const toClient = getClient(toSide);
-  const query = buildIdQuery(doc._id);
-  doc._id = query._id;
-  // Try to insert; if it already exists, replace
-  await toClient.db(dbName).collection(collName).replaceOne(query, doc, { upsert: true });
+  await collection(toSide, toDb, collName).replaceOne({ _id: doc._id }, doc, { upsert: true });
   return { success: true };
 }
-async function copyCollectionAcross(fromSide, fromDb, fromColl, toSide, toDb, toColl) {
-  const fromClient = getClient(fromSide);
-  const toClient = getClient(toSide);
 
-  const sourceColl = fromClient.db(fromDb).collection(fromColl);
+/** Sync selected field paths from one side's document to the other's. */
+async function syncFields(fromSide, toSide, fromDb, toDb, collName, docId, paths) {
+  const src = await collection(fromSide, fromDb, collName).findOne(buildIdQuery(docId), RAW_READ);
+  if (!src) throw new Error('Source document not found');
+
+  const update = {};
+  for (const path of paths) {
+    if (path === '_id') continue;
+    const value = valueAtPath(src, path);
+    if (value === undefined) (update.$unset ||= {})[path] = '';
+    else (update.$set ||= {})[path] = value;
+  }
+  if (!update.$set && !update.$unset) return { modifiedCount: 0 };
+
+  const result = await collection(toSide, toDb, collName).updateOne({ _id: src._id }, update);
+  if (result.matchedCount === 0) throw new Error('Target document not found');
+  return { modifiedCount: result.modifiedCount };
+}
+
+async function copyCollectionAcross(fromSide, fromDb, fromColl, toSide, toDb, toColl) {
+  const toClient = getClient(toSide);
+  const sourceColl = collection(fromSide, fromDb, fromColl);
   const targetColl = toClient.db(toDb).collection(toColl);
 
-  // Ensure the target collection exists even for an empty source.
-  const total = await sourceColl.countDocuments({});
-  if (total === 0) {
+  const cursor = sourceColl.find({}, RAW_READ);
+
+  // Ensure the target collection exists even for an empty source. Probing the
+  // cursor avoids the extra full pass a pre-emptive countDocuments would cost.
+  if (!(await cursor.hasNext())) {
     const existing = await toClient.db(toDb).listCollections({ name: toColl }).toArray();
     if (existing.length === 0) await toClient.db(toDb).createCollection(toColl);
     return { copiedCount: 0, matchedCount: 0, upsertedCount: 0, modifiedCount: 0 };
@@ -87,7 +109,6 @@ async function copyCollectionAcross(fromSide, fromDb, fromColl, toSide, toDb, to
   // Stream the source in batches and upsert by _id so existing docs are UPDATED
   // (not skipped) and new docs are inserted — this is what a sync must do.
   const BATCH_SIZE = 500;
-  const cursor = sourceColl.find({});
   let batch = [];
   let upsertedCount = 0;
   let modifiedCount = 0;
@@ -105,8 +126,8 @@ async function copyCollectionAcross(fromSide, fromDb, fromColl, toSide, toDb, to
     batch = [];
   };
 
-  while (await cursor.hasNext()) {
-    batch.push(await cursor.next());
+  for await (const doc of cursor) {
+    batch.push(doc);
     if (batch.length >= BATCH_SIZE) await flush();
   }
   await flush();
@@ -120,66 +141,51 @@ async function copyCollectionAcross(fromSide, fromDb, fromColl, toSide, toDb, to
 }
 
 async function createDatabase(side, dbName, collName) {
-  const client = getClient(side);
-  await client.db(dbName).createCollection(collName || '_init');
+  await getClient(side).db(dbName).createCollection(collName || '_init');
   return { success: true };
 }
 
 async function dropDatabase(side, dbName) {
-  const client = getClient(side);
-  await client.db(dbName).dropDatabase();
+  await getClient(side).db(dbName).dropDatabase();
   return { success: true };
 }
 
 async function dropCollection(side, dbName, collName) {
-  const client = getClient(side);
-  await client.db(dbName).collection(collName).drop();
+  await collection(side, dbName, collName).drop();
   return { success: true };
 }
 
 async function createCollection(side, dbName, collName, options = {}) {
-  const client = getClient(side);
-  await client.db(dbName).createCollection(collName, options);
+  await getClient(side).db(dbName).createCollection(collName, options);
   return { success: true };
 }
 
+/** Reject a path $rename can't take: empty segments, `$` operators, `_id`. */
+function assertRenamablePath(path, label) {
+  const parts = path.split('.');
+  if (parts.some(p => p === '' || p.startsWith('$'))) {
+    throw new Error(`Invalid ${label} "${path}": segments must be non-empty and must not start with "$".`);
+  }
+  if (parts[0] === '_id') throw new Error('The _id field cannot be renamed.');
+}
+
 async function renameField(side, dbName, collName, oldName, newName) {
-  const client = getClient(side);
-  const result = await client.db(dbName).collection(collName).updateMany({}, { $rename: { [oldName]: newName } });
+  assertRenamablePath(oldName, 'field name');
+  assertRenamablePath(newName, 'new field name');
+  if (oldName === newName) return { modifiedCount: 0 };
+  if (newName.startsWith(`${oldName}.`) || oldName.startsWith(`${newName}.`)) {
+    throw new Error('A field cannot be renamed into its own parent or child.');
+  }
+  const result = await collection(side, dbName, collName)
+    .updateMany({ [oldName]: { $exists: true } }, { $rename: { [oldName]: newName } });
   return { modifiedCount: result.modifiedCount };
 }
 
 async function deleteDocuments(side, dbName, collName, query) {
-  const client = getClient(side);
-  if (query._id && typeof query._id === 'string' && ObjectId.isValid(query._id)) {
-    query._id = new ObjectId(query._id);
-  }
-  const result = await client.db(dbName).collection(collName).deleteMany(query);
+  const filter = deserializeInput(query);
+  if (typeof filter._id === 'string') Object.assign(filter, buildIdQuery(filter._id));
+  const result = await collection(side, dbName, collName).deleteMany(filter);
   return { deletedCount: result.deletedCount };
-}
-
-async function deleteOneByFilter(side, dbName, collName, filter) {
-  const client = getClient(side);
-  const result = await client.db(dbName).collection(collName).deleteOne(filter);
-  return { deletedCount: result.deletedCount };
-}
-
-async function insertManyDocs(side, dbName, collName, docs) {
-  const client = getClient(side);
-  const result = await client.db(dbName).collection(collName).insertMany(deserializeInput(docs));
-  return { insertedCount: result.insertedCount };
-}
-
-async function updateOneByFilter(side, dbName, collName, filter, update) {
-  const client = getClient(side);
-  const result = await client.db(dbName).collection(collName).updateOne(filter, update);
-  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
-}
-
-async function updateManyByFilter(side, dbName, collName, filter, update) {
-  const client = getClient(side);
-  const result = await client.db(dbName).collection(collName).updateMany(filter, update);
-  return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
 }
 
 module.exports = {
@@ -190,6 +196,7 @@ module.exports = {
   deleteDocument,
   patchDocument,
   copyDocument,
+  syncFields,
   copyCollectionAcross,
   createDatabase,
   dropDatabase,
@@ -197,8 +204,4 @@ module.exports = {
   createCollection,
   renameField,
   deleteDocuments,
-  deleteOneByFilter,
-  insertManyDocs,
-  updateOneByFilter,
-  updateManyByFilter,
 };

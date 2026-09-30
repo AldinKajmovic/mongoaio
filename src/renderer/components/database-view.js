@@ -1,6 +1,6 @@
 import { state, elements } from '../utils/state.js';
 import { showLoading, hideLoading, toast } from '../utils/ui.js';
-import { emptyState } from '../utils/dom.js';
+import { emptyState, escapeHtml, queryAllHtml } from '../utils/dom.js';
 import { confirmDialog } from '../modals/base.js';
 import { navigateTo, loadDatabases } from '../utils/navigation.js';
 
@@ -11,14 +11,6 @@ export function renderDatabases({ common, onlyInSource, onlyInTarget }) {
     <span class="stat-pill source-only ${state.dbFilter === 'source-only' ? 'active' : ''}" data-filter="source-only">${onlyInSource.length} only in source</span>
     <span class="stat-pill target-only ${state.dbFilter === 'target-only' ? 'active' : ''}" data-filter="target-only">${onlyInTarget.length} only in target</span>
   `;
-
-  const dbPassesFilter = (status) => {
-    if (state.dbFilter === 'all') return true;
-    if (state.dbFilter === 'common') return status === 'common';
-    if (state.dbFilter === 'source-only') return status === 'missing';
-    if (state.dbFilter === 'target-only') return status === 'missing';
-    return true;
-  };
 
   // Source column: common + onlyInSource
   const sourceItems = [
@@ -33,21 +25,21 @@ export function renderDatabases({ common, onlyInSource, onlyInTarget }) {
   ];
 
   elements.sourceDbList.innerHTML = sourceItems.length ? sourceItems.map(item => `
-    <div class="item-card" data-db="${item.name}" data-status="${item.status}">
-      <span class="item-name">${item.name}</span>
+    <div class="item-card" data-db="${escapeHtml(item.name)}" data-status="${escapeHtml(item.status)}">
+      <span class="item-name">${escapeHtml(item.name)}</span>
       <div class="u-flex u-items-center u-gap-6">
-        <span class="item-status ${item.status}">${item.status === 'common' ? '✓ Common' : '⚠ Source only'}</span>
-        ${item.status === 'missing' ? `<button class="btn btn-sm btn-target copy-db-btn" data-from="source" data-to="target" data-db="${item.name}" title="Copy to target">-> Copy to Target</button>` : ''}
+        <span class="item-status ${escapeHtml(item.status)}">${item.status === 'common' ? '✓ Common' : '⚠ Source only'}</span>
+        ${item.status === 'missing' ? `<button class="btn btn-sm btn-target copy-db-btn" data-from="source" data-to="target" data-db="${escapeHtml(item.name)}" title="Copy to target">-> Copy to Target</button>` : ''}
       </div>
     </div>
   `).join('') : emptyState('No databases');
 
   elements.targetDbList.innerHTML = targetItems.length ? targetItems.map(item => `
-    <div class="item-card" data-db="${item.name}" data-status="${item.status}">
-      <span class="item-name">${item.name}</span>
+    <div class="item-card" data-db="${escapeHtml(item.name)}" data-status="${escapeHtml(item.status)}">
+      <span class="item-name">${escapeHtml(item.name)}</span>
       <div class="u-flex u-items-center u-gap-6">
-        <span class="item-status ${item.status}">${item.status === 'common' ? '✓ Common' : '⚠ Target only'}</span>
-        ${item.status === 'missing' ? `<button class="btn btn-sm btn-source copy-db-btn" data-from="target" data-to="source" data-db="${item.name}" title="Copy to source"><- Copy to Source</button>` : ''}
+        <span class="item-status ${escapeHtml(item.status)}">${item.status === 'common' ? '✓ Common' : '⚠ Target only'}</span>
+        ${item.status === 'missing' ? `<button class="btn btn-sm btn-source copy-db-btn" data-from="target" data-to="source" data-db="${escapeHtml(item.name)}" title="Copy to source"><- Copy to Source</button>` : ''}
       </div>
     </div>
   `).join('') : emptyState('No databases');
@@ -104,7 +96,7 @@ export function renderDatabases({ common, onlyInSource, onlyInTarget }) {
   }
 
   // Copy DB buttons
-  document.querySelectorAll('.copy-db-btn').forEach(btn => {
+  queryAllHtml('.copy-db-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const from = btn.dataset.from;

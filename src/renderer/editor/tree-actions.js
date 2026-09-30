@@ -1,5 +1,5 @@
 import { state, elements } from '../utils/state.js';
-import { toast, showLoading, hideLoading } from '../utils/ui.js';
+import { toast, showLoading, hideLoading, confirmToast } from '../utils/ui.js';
 import { openAddDatabaseModal } from '../modals/add-database.js';
 import { openAddCollectionModal } from '../modals/add-collection.js';
 import { updateShellContext, hideShellPanel } from './shell.js';
@@ -114,24 +114,25 @@ export async function disconnectAll() {
  */
 export async function dropDatabase(alias, dbName) {
   await ensureActive(alias);
-  const msg = `Are you sure you want to drop database "${dbName}"?\n\n` +
+  const msg = `Are you sure you want to drop database "${dbName}"? ` +
     'This will PERMANENTLY DELETE all collections and data in this database.';
-  if (!confirm(msg)) return;
 
-  showLoading(`Dropping database ${dbName}...`);
-  try {
-    const result = await window.api.dropDatabase('source', dbName);
-    if (result.error) {
-      toast(`Failed to drop database: ${result.error}`, 'error');
-    } else {
-      toast(`Database ${dbName} dropped`, 'success');
-      renderEditorTree();
+  confirmToast(msg, async () => {
+    showLoading(`Dropping database ${dbName}...`);
+    try {
+      const result = await window.api.dropDatabase('source', dbName);
+      if (result.error) {
+        toast(`Failed to drop database: ${result.error}`, 'error');
+      } else {
+        toast(`Database ${dbName} dropped`, 'success');
+        renderEditorTree();
+      }
+    } catch (err) {
+      toast(`Error: ${err.message}`, 'error');
+    } finally {
+      hideLoading();
     }
-  } catch (err) {
-    toast(`Error: ${err.message}`, 'error');
-  } finally {
-    hideLoading();
-  }
+  });
 }
 
 export async function addCollection(alias, dbName) {

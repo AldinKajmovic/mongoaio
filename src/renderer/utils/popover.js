@@ -28,6 +28,8 @@ export function openPopover(anchorEl, content, opts = {}) {
   if (opts.className) el.className = opts.className;
   // Guarantee the inline left/top are honoured regardless of the class's CSS.
   el.style.position = 'fixed';
+  // Callers build string content from templates the no-unsafe-html rule checks at their call site.
+  // eslint-disable-next-line local/no-unsafe-html -- content is caller-built, escaped markup
   if (typeof content === 'string') el.innerHTML = content;
   else el.appendChild(content);
   document.body.appendChild(el);

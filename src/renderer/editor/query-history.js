@@ -3,14 +3,13 @@ import { state, elements } from '../utils/state.js';
 import { toast } from '../utils/ui.js';
 import { openPopover as sharedOpenPopover, closePopover as sharedClosePopover } from '../utils/popover.js';
 import { runEditorQuery } from './query.js';
+import { icon } from '../utils/icons.js';
 
 const HIST_KEY = 'mongoaio.queryHistory';
 const SAVED_KEY = 'mongoaio.savedQueries';
 const HIST_CAP = 50;
 
 let popover = null;
-
-/* ----------------------------- persistence ------------------------------ */
 
 function load(key) {
   try {
@@ -27,9 +26,12 @@ function store(key, arr) {
   } catch (_) { /* quota / disabled storage — best effort */ }
 }
 
-/** Signature of a query entry, used for dedupe/equality. */
+/**
+ * Signature of a query entry, used for dedupe. `skip` is left out so paging
+ * through one query refreshes its entry instead of filling history with copies.
+ */
 function sig(e) {
-  return [e.filter, e.sort, e.projection, e.limit, e.skip, e.db, e.coll].join('');
+  return [e.filter, e.sort, e.projection, e.limit, e.db, e.coll].join('');
 }
 
 /** Snapshot the current query bar + selected collection. */
@@ -49,19 +51,16 @@ function captureCurrent() {
 /** Record a run into history (dedupe consecutive identical, newest first). */
 function recordRun() {
   const entry = captureCurrent();
-  // A run without a selected collection is a no-op query — don't record it.
   if (!entry.db || !entry.coll) return;
 
   const hist = load(HIST_KEY);
   if (hist.length && sig(hist[0]) === sig(entry)) {
-    hist[0].ts = entry.ts; // refresh timestamp, keep single entry
+    hist[0] = entry;
   } else {
     hist.unshift(entry);
   }
   store(HIST_KEY, hist.slice(0, HIST_CAP));
 }
-
-/* ------------------------------- applying -------------------------------- */
 
 /** Load an entry's values into the query bar and run it. */
 function applyEntry(entry) {
@@ -74,19 +73,17 @@ function applyEntry(entry) {
   runEditorQuery();
 }
 
-/* ------------------------------- popover --------------------------------- */
-
-function makeIconButton(cls, title, svg) {
+function makeIconButton(cls, title, svgHtml) {
   const b = document.createElement('button');
   b.className = cls;
   b.title = title;
   b.setAttribute('aria-label', title);
-  b.innerHTML = svg; // static, trusted SVG markup only
+  b.innerHTML = svgHtml;
   return b;
 }
 
 const SVG_STAR = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>';
-const SVG_X = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+const SVG_X = icon('close', 12, 2.5);
 
 /** Build one list row for a query entry. */
 function buildItem(entry, kind, index) {
@@ -235,11 +232,10 @@ function buildSaveButton(holder) {
   holder.appendChild(btn);
 }
 
-// Build the popover element (not yet mounted); the shared helper mounts and
-// positions it and manages outside-click / Escape dismissal.
 function buildPopover() {
   const pop = document.createElement('div');
-  pop.className = 'qh-popover';
+  // Plain container: openPopover() wraps this in the .qh-popover box itself.
+  pop.className = 'qh-inner';
 
   const header = document.createElement('div');
   header.className = 'qh-header';
@@ -277,7 +273,7 @@ function closePopover() {
 
 function openPopover(anchor) {
   const pop = buildPopover();
-  popover = pop;      // set before renderBody(), which reads `popover`
+  popover = pop;
   renderBody();
   sharedOpenPopover(anchor, pop, {
     className: 'qh-popover',
@@ -286,17 +282,8 @@ function openPopover(anchor) {
   });
 }
 
-/* -------------------------------- init ----------------------------------- */
-
 export function initQueryHistory() {
-  // Record runs from both the main Run button and the query-builder Run button.
-  // Delegated on document so it fires after each button's own (target-phase)
-  // handler — e.g. the query builder writes the filter before this runs.
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('#btn-editor-run-query') || e.target.closest('#btn-qb-run')) {
-      recordRun();
-    }
-  });
+  document.addEventListener('editor-query-ran', recordRun);
 
   const btn = document.getElementById('btn-editor-query-history');
   if (btn) {

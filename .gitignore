@@ -149,4 +149,5 @@ connections.json
 # Build output
 dist
 
-package-lock.json
+# Local code-intelligence index
+.codegraph/

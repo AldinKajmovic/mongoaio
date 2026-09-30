@@ -60,6 +60,7 @@ export function assemble(stages, upTo, forceIndex) {
     try {
       value = parseStageBody(stage);
     } catch (e) {
+      /** @type {Error & { stageId?: number, stageNum?: number }} */
       const err = new Error(e.message);
       err.stageId = stage.id;
       err.stageNum = i + 1;

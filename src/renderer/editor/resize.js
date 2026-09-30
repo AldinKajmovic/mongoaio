@@ -1,3 +1,5 @@
+import { queryAllHtml } from '../utils/dom.js';
+
 let editorResizeInited = false;
 
 export function initEditorResizables() {
@@ -64,8 +66,8 @@ function setupTreeColumnResize() {
   const header = document.getElementById('editor-tree-header');
   if (!header) return;
 
-  const cols = header.querySelectorAll('.editor-data-col');
-  const handles = header.querySelectorAll('.col-resize-handle');
+  const cols = queryAllHtml('.editor-data-col', header);
+  const handles = queryAllHtml('.col-resize-handle', header);
 
   // Restore saved widths or use current rendered sizes
   const saved = loadColumnWidths('tree');
@@ -112,23 +114,23 @@ function setupTreeColumnResize() {
   });
 }
 
+/**
+ * Point every tree row at the current column template with one write. Rows read
+ * it from `--tree-cols` on their container, so a resize drag costs a single
+ * property update instead of one inline style per rendered row.
+ */
 export function syncTreeRowColumns(gridCols) {
-  // Sync doc-header rows (they share the same 3-column grid)
-  document.querySelectorAll('#editor-tree-rows .editor-doc-header').forEach(row => {
-    row.style.gridTemplateColumns = gridCols;
-  });
-  // Sync field rows (they have an extra indent column at the start)
-  // Parse the grid columns and prepend the indent column
-  document.querySelectorAll('#editor-tree-rows .editor-field-row').forEach(row => {
-    row.style.gridTemplateColumns = '24px ' + gridCols;
-  });
+  const rows = document.getElementById('editor-tree-rows');
+  if (!rows) return;
+  if (gridCols) rows.style.setProperty('--tree-cols', gridCols);
+  else rows.style.removeProperty('--tree-cols');
 }
 
 export function setupTableColumnResize() {
   const table = document.querySelector('.editor-table');
   if (!table) return;
 
-  const ths = table.querySelectorAll('.editor-table-th');
+  const ths = queryAllHtml('.editor-table-th', table);
 
   // Restore saved widths or use current rendered widths
   const saved = loadColumnWidths('table');
@@ -143,12 +145,12 @@ export function setupTableColumnResize() {
     }
   });
 
-  const handles = table.querySelectorAll('.col-resize-handle');
+  const handles = queryAllHtml('.col-resize-handle', table);
   handles.forEach(handle => {
     handle.addEventListener('mousedown', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const th = handle.closest('.editor-table-th');
+      const th = /** @type {HTMLElement} */ (handle.closest('.editor-table-th'));
       const startX = e.clientX;
       const startWidth = th.getBoundingClientRect().width;
       handle.classList.add('active');

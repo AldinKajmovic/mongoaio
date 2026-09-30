@@ -1,13 +1,25 @@
 import { elements } from './state.js';
 import { TOAST_DURATION_MS } from './constants.js';
 
-export function showLoading(text = 'Loading...') {
+/** Show the full-window loading overlay. */
+export function showLoading(text = 'Loading...', onCancel) {
   elements.loadingText.textContent = text;
+  const cancel = elements.loadingCancel;
+  if (cancel) {
+    cancel.style.display = onCancel ? 'inline-flex' : 'none';
+    cancel.disabled = false;
+    cancel.onclick = onCancel ? () => { cancel.disabled = true; onCancel(); } : null;
+  }
   elements.loadingOverlay.style.display = 'flex';
 }
 
 export function hideLoading() {
   elements.loadingOverlay.style.display = 'none';
+  const cancel = elements.loadingCancel;
+  if (cancel) {
+    cancel.style.display = 'none';
+    cancel.onclick = null;
+  }
 }
 
 export function toast(message, type = 'info') {

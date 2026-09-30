@@ -7,9 +7,12 @@
 const { spawn } = require('child_process');
 const os = require('os');
 
+/** @type {string} */
 let electronPath;
 try {
-  electronPath = require('electron');
+  // Required from plain Node, the electron package exports the binary's path
+  // (its type definitions describe the in-app API instead).
+  electronPath = /** @type {string} */ (/** @type {unknown} */ (require('electron')));
 } catch (_) {
   console.error('\n❌ ERROR: Electron not found!');
   console.error('Please run "npm install" first.\n');

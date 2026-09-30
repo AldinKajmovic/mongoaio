@@ -39,8 +39,8 @@ function openExportPopover(anchorEl) {
   const pop = openPopover(anchorEl, html, { className: 'io-popover io-export-popover' });
   pop.querySelector('#io-export-cancel').addEventListener('click', closePopover);
   pop.querySelector('#io-export-confirm').addEventListener('click', () => {
-    const format = pop.querySelector('#io-export-format').value;
-    const scope = pop.querySelector('#io-export-scope').value;
+    const format = /** @type {HTMLSelectElement} */ (pop.querySelector('#io-export-format')).value;
+    const scope = /** @type {HTMLSelectElement} */ (pop.querySelector('#io-export-scope')).value;
     closePopover();
     doExport(format, scope);
   });

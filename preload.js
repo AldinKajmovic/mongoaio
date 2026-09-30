@@ -1,13 +1,14 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('api', {
+const api = {
   getConnections: () => ipcRenderer.invoke('get-connections'),
+  connectionStorageInfo: () => ipcRenderer.invoke('connection-storage-info'),
   saveConnection: (alias, url) => ipcRenderer.invoke('save-connection', alias, url),
+  updateConnection: (oldAlias, newAlias, url) => ipcRenderer.invoke('update-connection', oldAlias, newAlias, url),
   deleteConnection: (alias) => ipcRenderer.invoke('delete-connection', alias),
   connect: (url1, url2) => ipcRenderer.invoke('connect', url1, url2),
   connectSingle: (url) => ipcRenderer.invoke('connect-single', url),
   disconnect: () => ipcRenderer.invoke('disconnect'),
-  listDatabases: (side) => ipcRenderer.invoke('list-databases', side),
   compareDatabases: () => ipcRenderer.invoke('compare-databases'),
   listCollections: (side, dbName) => ipcRenderer.invoke('list-collections', side, dbName),
   compareCollections: (sourceDbName, targetDbName) => ipcRenderer.invoke('compare-collections', sourceDbName, targetDbName),
@@ -17,7 +18,8 @@ contextBridge.exposeInMainWorld('api', {
   updateDocument: (side, dbName, collName, docId, doc) => ipcRenderer.invoke('update-document', side, dbName, collName, docId, doc),
   deleteDocument: (side, dbName, collName, docId) => ipcRenderer.invoke('delete-document', side, dbName, collName, docId),
   patchDocument: (side, dbName, collName, docId, doc) => ipcRenderer.invoke('patch-document', side, dbName, collName, docId, doc),
-  copyDocument: (fromSide, toSide, dbName, collName, docId) => ipcRenderer.invoke('copy-document', fromSide, toSide, dbName, collName, docId),
+  copyDocument: (fromSide, toSide, dbName, collName, docId, toDb) => ipcRenderer.invoke('copy-document', fromSide, toSide, dbName, collName, docId, toDb),
+  syncFields: (fromSide, toSide, fromDb, toDb, collName, docId, paths) => ipcRenderer.invoke('sync-fields', fromSide, toSide, fromDb, toDb, collName, docId, paths),
   copyCollection: (fromSide, toSide, dbName, collName) => ipcRenderer.invoke('copy-collection', fromSide, toSide, dbName, collName),
   copyCollectionAcross: (fromSide, fromDb, fromColl, toSide, toDb, toColl) => ipcRenderer.invoke('copy-collection-across', fromSide, fromDb, fromColl, toSide, toDb, toColl),
   createDatabase: (side, dbName, collName) => ipcRenderer.invoke('create-database', side, dbName, collName),
@@ -49,6 +51,10 @@ contextBridge.exposeInMainWorld('api', {
   // Document field ops (tree add/remove field)
   unsetField: (side, dbName, collName, docId, fieldPath) => ipcRenderer.invoke('unset-field', side, dbName, collName, docId, fieldPath),
   setField: (side, dbName, collName, docId, fieldPath, value) => ipcRenderer.invoke('set-field', side, dbName, collName, docId, fieldPath, value),
+  applyFieldChanges: (side, dbName, collName, docId, changes) => ipcRenderer.invoke('apply-field-changes', side, dbName, collName, docId, changes),
+
+  // Cancel a running query/aggregation by the opId passed in its options
+  cancelOp: (opId) => ipcRenderer.invoke('cancel-op', opId),
 
   // Import / Export
   exportData: (params) => ipcRenderer.invoke('export-data', params),
@@ -62,4 +68,8 @@ contextBridge.exposeInMainWorld('api', {
   onUpdateDownloadProgress: (callback) => ipcRenderer.on('update-download-progress', (_e, data) => callback(data)),
   onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', () => callback()),
   onUpdateError: (callback) => ipcRenderer.on('update-error', (_e, data) => callback(data)),
-});
+};
+
+/** @typedef {typeof api} MongoAioApi */
+
+contextBridge.exposeInMainWorld('api', api);

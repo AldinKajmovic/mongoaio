@@ -131,8 +131,77 @@
   z-index: 1;
 }
 
-.conn-item:hover .conn-remove-btn {
+.conn-edit-btn {
+  position: absolute;
+  top: -6px;
+  right: 16px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--accent-blue);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.conn-item:hover .conn-remove-btn,
+.conn-item:focus-within .conn-remove-btn,
+.conn-item:hover .conn-edit-btn,
+.conn-item:focus-within .conn-edit-btn {
   display: flex;
+}
+
+.conn-edit-btn:hover {
+  filter: brightness(1.15);
+}
+
+/* --- Edit connection popup --- */
+.edit-conn-modal {
+  max-width: 720px;
+}
+
+.edit-conn-label {
+  display: block;
+  margin: 12px 0 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.edit-conn-label:first-child {
+  margin-top: 0;
+}
+
+.edit-conn-url {
+  resize: vertical;
+  min-height: 84px;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.edit-conn-summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+
+.edit-conn-summary dt {
+  color: var(--text-muted);
+}
+
+.edit-conn-summary dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  word-break: break-all;
+  white-space: pre-line;
 }
 
 .conn-remove-btn:hover {

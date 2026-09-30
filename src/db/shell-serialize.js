@@ -34,7 +34,7 @@ function serializeValue(value, seen = new WeakSet()) {
   if (Int32 && value instanceof Int32) return value.valueOf();
   if (Double && value instanceof Double) return value.valueOf();
   if (Binary && value instanceof Binary) {
-    return { $binary: { base64: value.buffer.toString('base64'), subType: value.sub_type } };
+    return { $binary: { base64: value.toString('base64'), subType: value.sub_type } };
   }
   if (BSONRegExp && value instanceof BSONRegExp) return `/${value.pattern}/${value.options}`;
   if (value instanceof RegExp) return value.toString();

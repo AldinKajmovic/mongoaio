@@ -1,3 +1,4 @@
+import { escapeHtml } from '../utils/dom.js';
 import { $ } from '../utils/state.js';
 
 export function initAddCollectionShell() {
@@ -161,13 +162,13 @@ function collationPanel() {
 }
 
 function collationRow(label, id, optionsHtml) {
-  return `<div class="add-coll-form-row"><label>${label}</label><select id="${id}" class="add-coll-select">${optionsHtml}</select></div>`;
+  return `<div class="add-coll-form-row"><label>${escapeHtml(label)}</label><select id="${escapeHtml(id)}" class="add-coll-select">${optionsHtml}</select></div>`;
 }
 
 function notSetPlus(values) {
   return `<option value="">(not set)</option>` + values.map(v => {
     const val = v.split(' - ')[0];
-    return `<option value="${val}">${v}</option>`;
+    return `<option value="${escapeHtml(val)}">${escapeHtml(v)}</option>`;
   }).join('');
 }
 
@@ -183,6 +184,6 @@ function localeOptions() {
     ['zh', 'zh - Chinese'], ['zh_Hant', 'zh_Hant - Chinese (Traditional)'],
   ];
   return locales.map(([val, label]) =>
-    `<option value="${val}"${val === 'en_US' ? ' selected' : ''}>${label}</option>`
+    `<option value="${escapeHtml(val)}"${val === 'en_US' ? ' selected' : ''}>${escapeHtml(label)}</option>`
   ).join('');
 }
