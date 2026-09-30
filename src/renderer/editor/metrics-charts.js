@@ -35,7 +35,7 @@ export function setText(id, text) {
 // --- Canvas rendering -------------------------------------------------------
 
 export function drawChart(canvasId, buf, series) {
-  const canvas = document.getElementById(canvasId);
+  const canvas = /** @type {HTMLCanvasElement | null} */ (document.getElementById(canvasId));
   if (!canvas) return 0;
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
@@ -91,7 +91,7 @@ export function drawChart(canvasId, buf, series) {
 
 // Legend values live in the card following the canvas — walk up to the card.
 export function updateLegend(canvasId, values) {
-  const canvas = document.getElementById(canvasId);
+  const canvas = /** @type {HTMLCanvasElement | null} */ (document.getElementById(canvasId));
   if (!canvas) return;
   const card = canvas.closest('.metrics-card');
   if (!card) return;

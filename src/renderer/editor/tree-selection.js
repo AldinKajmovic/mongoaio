@@ -1,5 +1,5 @@
 import { toast } from '../utils/ui.js';
-import { escapeHtml } from '../utils/dom.js';
+import { escapeHtml, closestTarget, queryAllHtml } from '../utils/dom.js';
 
 // --- Tagged collections state ---
 const taggedCollections = new Map(); // key → { alias, db, coll, node }
@@ -63,7 +63,7 @@ export function tagRange(targetNode) {
   if (!tree) return;
 
   // Get all visible collection nodes in DOM order
-  const allColls = Array.from(tree.querySelectorAll('.tree-collection'));
+  const allColls = Array.from(queryAllHtml('.tree-collection', tree));
   const anchorIdx = allColls.indexOf(anchorNode);
   const targetIdx = allColls.indexOf(targetNode);
   if (anchorIdx === -1 || targetIdx === -1) return;
@@ -115,7 +115,7 @@ function hideMenu() {
 document.addEventListener('click', hideMenu);
 document.addEventListener('contextmenu', (e) => {
   // Only keep open if re-triggered on the tree (handled below)
-  if (!e.target.closest('.editor-tree')) hideMenu();
+  if (!closestTarget(e, '.editor-tree')) hideMenu();
 });
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hideMenu();

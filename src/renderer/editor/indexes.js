@@ -1,7 +1,9 @@
 import { state, elements } from '../utils/state.js';
-import { toast, showLoading, hideLoading } from '../utils/ui.js';
-import { escapeHtml, parseRelaxedJSON } from '../utils/dom.js';
+import { toast, showLoading, hideLoading, confirmToast } from '../utils/ui.js';
+import { escapeHtml, closestTarget } from '../utils/dom.js';
 import { showAuxPanel } from './editor-views.js';
+import { renderIndexRows } from './indexes-table.js';
+import { readCreateForm } from './indexes-form.js';
 
 // ---------------------------------------------------------------------------
 // Index management panel. Lazily builds its DOM into #editor-view-indexes-content
@@ -15,7 +17,7 @@ let rowSeq = 0;
 /** One field row in the "create index" form: a field-name input + direction select. */
 function fieldRowHtml(id) {
   return `
-    <div class="idx-field-row" data-row-id="${id}">
+    <div class="idx-field-row" data-row-id="${escapeHtml(id)}">
       <input type="text" class="idx-field-name" placeholder="field name" spellcheck="false">
       <select class="idx-field-dir">
         <option value="1">Ascending (1)</option>
@@ -101,7 +103,7 @@ function buildDom() {
   const fieldRows = document.getElementById('idx-field-rows');
   if (fieldRows) {
     fieldRows.addEventListener('click', (e) => {
-      const removeBtn = e.target.closest('.idx-field-remove');
+      const removeBtn = closestTarget(e, '.idx-field-remove');
       if (!removeBtn) return;
       const rows = fieldRows.querySelectorAll('.idx-field-row');
       if (rows.length <= 1) return; // keep at least one row
@@ -115,7 +117,7 @@ function buildDom() {
   const tableBody = document.getElementById('idx-table-body');
   if (tableBody) {
     tableBody.addEventListener('click', (e) => {
-      const btn = e.target.closest('.idx-drop-btn');
+      const btn = /** @type {HTMLButtonElement | null} */ (closestTarget(e, '.idx-drop-btn'));
       if (!btn || btn.disabled) return;
       const name = btn.dataset.indexName;
       dropIndexByName(name);
@@ -134,54 +136,6 @@ function addFieldRow() {
   const wrap = document.createElement('div');
   wrap.innerHTML = fieldRowHtml(rowSeq++);
   container.appendChild(wrap.firstElementChild);
-}
-
-function formatKeySpec(key) {
-  return Object.entries(key || {})
-    .map(([field, dir]) => {
-      let dirHtml;
-      if (dir === -1 || dir === '-1') dirHtml = '<span class="idx-key-dir" title="descending">↓ -1</span>';
-      else if (dir === 1 || dir === '1') dirHtml = '<span class="idx-key-dir" title="ascending">↑ 1</span>';
-      else dirHtml = `<span class="idx-key-dir">${escapeHtml(String(dir))}</span>`;
-      return `<span class="idx-key"><span class="idx-key-field">${escapeHtml(field)}</span>${dirHtml}</span>`;
-    })
-    .join('');
-}
-
-function propertyBadges(idx) {
-  const badges = [];
-  if (idx.unique) badges.push('<span class="idx-badge idx-badge-unique">unique</span>');
-  if (idx.sparse) badges.push('<span class="idx-badge idx-badge-sparse">sparse</span>');
-  if (typeof idx.ttl === 'number') badges.push(`<span class="idx-badge idx-badge-ttl">TTL:${idx.ttl}s</span>`);
-  if (idx.partialFilterExpression) badges.push('<span class="idx-badge idx-badge-partial">partial</span>');
-  if (idx.isIdIndex) badges.push('<span class="idx-badge idx-badge-id">_id</span>');
-  return badges.join(' ') || '<span class="u-text-muted">—</span>';
-}
-
-function renderIndexRows(indexes) {
-  const tbody = document.getElementById('idx-table-body');
-  if (!tbody) return;
-
-  if (!indexes || indexes.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="idx-empty">No indexes found.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = indexes.map((idx) => {
-    const ops = idx.accesses && typeof idx.accesses.ops === 'number' ? idx.accesses.ops : '—';
-    const dropDisabled = idx.isIdIndex ? 'disabled title="The default _id index cannot be dropped"' : '';
-    // Index name is kept only as a tooltip on the keys cell (used internally for
-    // Drop); the keys themselves identify the index, so no dedicated column.
-    return `
-      <tr>
-        <td class="idx-cell-keys" title="${escapeHtml(idx.name)}">${formatKeySpec(idx.key)}</td>
-        <td class="idx-cell-props">${propertyBadges(idx)}</td>
-        <td class="idx-cell-usage">${escapeHtml(String(ops))}</td>
-        <td class="idx-cell-actions">
-          <button class="btn btn-ghost btn-sm idx-drop-btn" data-index-name="${escapeHtml(idx.name)}" ${dropDisabled}>Drop</button>
-        </td>
-      </tr>`;
-  }).join('');
 }
 
 async function loadIndexes() {
@@ -214,70 +168,28 @@ async function loadIndexes() {
   }
 }
 
-async function dropIndexByName(name) {
+function dropIndexByName(name) {
   const side = state.editor.side || 'source';
   const db = state.editor.db;
   const coll = state.editor.coll;
   if (!db || !coll) return;
 
-  if (!window.confirm(`Drop index "${name}" on ${db}.${coll}? This cannot be undone.`)) return;
-
-  showLoading(`Dropping index ${name}...`);
-  try {
-    const res = await window.api.dropIndex(side, db, coll, name);
-    if (res && res.error) {
-      toast(res.error, 'error');
-      return;
-    }
-    toast(`Index "${name}" dropped`, 'success');
-    await loadIndexes();
-  } catch (err) {
-    toast(err.message, 'error');
-  } finally {
-    hideLoading();
-  }
-}
-
-function readCreateForm() {
-  const rows = document.querySelectorAll('#idx-field-rows .idx-field-row');
-  const keys = {};
-  for (const row of rows) {
-    const nameInput = row.querySelector('.idx-field-name');
-    const dirSelect = row.querySelector('.idx-field-dir');
-    const field = nameInput ? nameInput.value.trim() : '';
-    if (!field) continue;
-    // A compound index can't list the same field twice; an object key would
-    // silently overwrite, so reject it explicitly instead.
-    if (Object.prototype.hasOwnProperty.call(keys, field)) {
-      throw new Error(`Duplicate field "${field}" — a compound index cannot use the same field twice.`);
-    }
-    const dir = parseInt(dirSelect.value, 10) === -1 ? -1 : 1;
-    keys[field] = dir;
-  }
-
-  const options = {};
-  const uniqueEl = document.getElementById('idx-opt-unique');
-  const sparseEl = document.getElementById('idx-opt-sparse');
-  const ttlEl = document.getElementById('idx-opt-ttl');
-  const nameEl = document.getElementById('idx-opt-name');
-  const partialEl = document.getElementById('idx-opt-partial');
-
-  if (uniqueEl && uniqueEl.checked) options.unique = true;
-  if (sparseEl && sparseEl.checked) options.sparse = true;
-  if (ttlEl && ttlEl.value.trim() !== '') {
-    const n = parseInt(ttlEl.value.trim(), 10);
-    if (!Number.isNaN(n)) options.expireAfterSeconds = n;
-  }
-  if (nameEl && nameEl.value.trim() !== '') options.name = nameEl.value.trim();
-  if (partialEl && partialEl.value.trim() !== '') {
+  confirmToast(`Drop index "${name}" on ${db}.${coll}? This cannot be undone.`, async () => {
+    showLoading(`Dropping index ${name}...`);
     try {
-      options.partialFilterExpression = parseRelaxedJSON(partialEl.value.trim());
+      const res = await window.api.dropIndex(side, db, coll, name);
+      if (res && res.error) {
+        toast(res.error, 'error');
+        return;
+      }
+      toast(`Index "${name}" dropped`, 'success');
+      await loadIndexes();
     } catch (err) {
-      throw new Error(`Invalid partial filter expression JSON: ${err.message}`);
+      toast(err.message, 'error');
+    } finally {
+      hideLoading();
     }
-  }
-
-  return { keys, options };
+  });
 }
 
 async function onCreateSubmit(e) {

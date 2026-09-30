@@ -1,5 +1,5 @@
 import { savedConnections } from '../utils/connections.js';
-import { escapeHtml } from '../utils/dom.js';
+import { escapeHtml, queryAllHtml } from '../utils/dom.js';
 import { editorConnectedAliases } from './tree-data.js';
 
 /**
@@ -15,12 +15,12 @@ export function filterEditorTree(searchQuery) {
   const q = (searchQuery || '').toLowerCase().trim();
 
   if (!q) {
-    tree.querySelectorAll('.tree-node').forEach(n => { n.style.display = ''; });
+    queryAllHtml('.tree-node', tree).forEach(n => { n.style.display = ''; });
     return;
   }
 
-  tree.querySelectorAll('.tree-connection').forEach(conn => {
-    const dbNodes = conn.querySelectorAll('.tree-database');
+  queryAllHtml('.tree-connection', tree).forEach(conn => {
+    const dbNodes = queryAllHtml('.tree-database', conn);
     // Not connected/loaded yet — can't filter its collections, so leave visible.
     if (dbNodes.length === 0) { conn.style.display = ''; return; }
 
@@ -28,7 +28,7 @@ export function filterEditorTree(searchQuery) {
 
     dbNodes.forEach(db => {
       const dbLabel = (db.querySelector('.tree-node-header .tree-node-label')?.textContent || '').toLowerCase();
-      const collNodes = db.querySelectorAll('.tree-collection');
+      const collNodes = queryAllHtml('.tree-collection', db);
       let dbHasMatch = false;
 
       collNodes.forEach(coll => {
@@ -78,7 +78,7 @@ export function renderEditorTree(searchQuery) {
     const statusTtl = isConn ? 'Connected' : 'Disconnected';
     const safeAlias = escapeHtml(alias);
     let label = alias;
-    try { const u = new URL(url); label = alias + ' (' + u.hostname + ':' + (u.port || '27017') + ')'; } catch (e) { }
+    try { const u = new URL(url); label = alias + ' (' + u.hostname + ':' + (u.port || '27017') + ')'; } catch (_) { /* not a URL — show the alias alone */ }
     const safeLabel = escapeHtml(label);
 
     return '<div class="tree-node tree-connection" data-type="connection" data-alias="' + safeAlias + '">' +

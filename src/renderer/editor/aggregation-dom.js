@@ -1,14 +1,8 @@
 import { elements } from '../utils/state.js';
 import { escapeHtml } from '../utils/dom.js';
+import { icon } from '../utils/icons.js';
 import { formatDocJson } from './query-renderer.js';
 import { OPERATORS, parseStageBody, stageSignature } from './aggregation-operators.js';
-
-// View layer for the aggregation builder: DOM helpers, the panel scaffold, the
-// per-stage card and the inline preview surface. Stateless — callers pass the
-// stage model plus a handlers object; nothing here reaches back into the
-// coordinator's `stages`/`limit` state directly.
-
-// --- Small DOM helpers ------------------------------------------------------
 
 export function el(tag, className, props) {
   const node = document.createElement(tag);
@@ -17,24 +11,17 @@ export function el(tag, className, props) {
   return node;
 }
 
-function icon(paths) {
-  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
-}
+const AGG_ICON_SIZE = 14;
 
 export const ICONS = {
-  up: icon('<polyline points="18 15 12 9 6 15"></polyline>'),
-  down: icon('<polyline points="6 9 12 15 18 9"></polyline>'),
-  dup: icon('<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>'),
-  del: icon('<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>'),
-  play: icon('<polygon points="5 3 19 12 5 21 5 3"></polygon>'),
-  close: icon('<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="12"></line>'),
+  up: icon('up', AGG_ICON_SIZE),
+  down: icon('down', AGG_ICON_SIZE),
+  dup: icon('copy', AGG_ICON_SIZE),
+  del: icon('trash', AGG_ICON_SIZE),
+  play: icon('play', AGG_ICON_SIZE),
+  close: icon('close', AGG_ICON_SIZE),
 };
 
-// --- Panel scaffold ---------------------------------------------------------
-
-// Build the aggregation panel shell and wire toolbar handlers. `h` supplies
-// { onAdd, onRun, onCopy, onLimitChange } plus the initial `limit`. Returns
-// true when the DOM was built, false when the host element is missing.
 export function buildDom(h) {
   const root = elements.editorViewAggregationContent;
   if (!root) return false;
@@ -74,17 +61,10 @@ export function buildDom(h) {
   return true;
 }
 
-// --- One stage card ---------------------------------------------------------
-
-// Build a stage card. `count` is the current stage count (for move-button
-// gating). `h` supplies the callbacks: onOperatorChange(stage, op), onToggle,
-// onMoveUp, onMoveDown, onDuplicate, onDelete, onPreview — each receiving the
-// stage.
 export function buildStageCard(stage, index, count, h) {
   const card = el('div', 'agg-stage' + (stage.enabled ? '' : ' agg-stage-disabled'));
   card.dataset.id = String(stage.id);
 
-  // Header row: number, operator select, controls.
   const header = el('div', 'agg-stage-header');
 
   const num = el('span', 'agg-stage-num', { textContent: String(index + 1) });
@@ -123,7 +103,6 @@ export function buildStageCard(stage, index, count, h) {
   controls.append(toggle, upBtn, downBtn, dupBtn, delBtn);
   header.append(num, select, controls);
 
-  // Body: textarea + parse-error line.
   const bodyWrap = el('div', 'agg-stage-body');
   const textarea = el('textarea', 'agg-stage-textarea', {
     spellcheck: false,
@@ -151,8 +130,6 @@ export function buildStageCard(stage, index, count, h) {
   });
   previewBtn.addEventListener('click', () => {
     const panel = stage.els && stage.els.preview;
-    // If we already have a fresh (non-stale) preview rendered, just toggle its
-    // visibility instead of re-querying — so "hide" is reversible without a run.
     if (panel && panel.childElementCount > 0 && !isStale(stage)) {
       const hidden = panel.classList.toggle('u-hidden');
       stage.open = !hidden;
@@ -166,9 +143,6 @@ export function buildStageCard(stage, index, count, h) {
 
   bodyWrap.append(textarea, errorLine, actions);
 
-  // Preview panel (inline results for this stage's slice of the pipeline).
-  // Cards are rebuilt on structural edits, which discards any rendered preview
-  // content, so start collapsed rather than showing an empty open panel.
   stage.open = false;
   stage.lastBody = null;
   const preview = el('div', 'agg-preview u-hidden');
@@ -179,8 +153,6 @@ export function buildStageCard(stage, index, count, h) {
   validateStageInline(stage);
   return card;
 }
-
-// --- Inline validation + staleness -----------------------------------------
 
 export function validateStageInline(stage) {
   if (!stage.els) return;
@@ -197,13 +169,10 @@ export function validateStageInline(stage) {
   }
 }
 
-// True when the stage has never been previewed or its body/operator changed
-// since the last successful preview (so cached results can't be re-shown as-is).
 export function isStale(stage) {
   return stage.lastBody === null || stage.lastBody !== stageSignature(stage);
 }
 
-// Flag an already-open preview as out of date after an edit.
 export function markStale(stage) {
   if (!stage.els || !stage.open) return;
   if (stage.lastBody !== null && stage.lastBody !== stageSignature(stage)) {
@@ -214,8 +183,6 @@ export function markStale(stage) {
     }
   }
 }
-
-// --- Preview rendering ------------------------------------------------------
 
 export function renderPreviewError(panel, message, onClose) {
   panel.innerHTML = `

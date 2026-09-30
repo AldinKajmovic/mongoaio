@@ -1,11 +1,14 @@
 /* Reset */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-body, html {
+body,
+html {
   height: 100vh;
   width: 100vw;
   margin: 0;
@@ -24,13 +27,16 @@ body {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(59, 130, 246, 0.3);
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(59, 130, 246, 0.5);
 }
@@ -52,8 +58,13 @@ body::before {
 }
 
 @keyframes bgShift {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(-2%, -1%) rotate(1deg); }
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(-2%, -1%) rotate(1deg);
+  }
 }
 
 /* =============================================
@@ -62,8 +73,7 @@ body::before {
 .loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 20, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(10, 10, 20, 0.92);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -82,12 +92,21 @@ body::before {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-overlay p {
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+/* Shown only while a cancellable query runs (ui.js toggles display). Scoped
+   under the overlay so the later `.btn { display }` rule can't reveal it. */
+.loading-overlay .loading-cancel-btn {
+  display: none;
+  margin-top: 16px;
 }
 
 /* Main content area — scrollable */
@@ -111,79 +130,255 @@ body.col-resizing * {
   .comparison-columns {
     flex-direction: column;
   }
+
   .column-divider {
     display: none;
   }
+
   .diff-view {
     grid-template-columns: 1fr;
   }
+
   .diff-field {
     grid-template-columns: 100px 1fr;
   }
 }
+
 /* =============================================
    Utilities — Used to replace inline styles
    ============================================= */
-.u-flex { display: flex; }
-.u-flex-col { display: flex; flex-direction: column; }
-.u-items-center { align-items: center; }
-.u-justify-end { justify-content: flex-end; }
-.u-justify-center { justify-content: center; }
-.u-justify-between { justify-content: space-between; }
-.u-gap-4 { gap: 4px; }
-.u-gap-6 { gap: 6px; }
-.u-gap-8 { gap: 8px; }
-.u-gap-12 { gap: 12px; }
-.u-w-full { width: 100%; }
-.u-h-auto { height: auto; }
-.u-hidden { display: none; }
-.u-display-none { display: none; }
-.u-text-muted { color: var(--text-muted); }
-.u-grow { flex-grow: 1 !important; }
-.u-text-secondary { color: var(--text-secondary); }
-.u-text-primary { color: var(--text-primary); }
-.u-text-error { color: var(--accent-red); }
-.u-text-amber { color: var(--accent-amber); }
-.u-italic { font-style: italic; }
-.u-font-sans { font-family: var(--font-sans); }
-.u-font-mono { font-family: var(--font-mono); }
-.u-font-bold { font-weight: 700; }
-.u-bg-transparent { background: transparent !important; }
-.u-border-b { border-bottom: 1px solid var(--border); }
-.u-pb-8 { padding-bottom: 8px; }
-.u-mb-4 { margin-bottom: 4px; }
-.u-mt-16 { margin-top: 16px; }
-.u-opacity-0 { opacity: 0; }
-.u-opacity-1 { opacity: 1; }
-.u-pointer { cursor: pointer; }
-.u-no-select { user-select: none; }
-.u-pos-rel { position: relative; }
-.u-z-10 { z-index: 10; }
-.u-m-0 { margin: 0 !important; }
-.u-p-0 { padding: 0 !important; }
-.u-p-12 { padding: 12px !important; }
-.u-p-16 { padding: 16px !important; }
-.u-p-20 { padding: 20px !important; }
-.u-block { display: block !important; }
-.u-inline-block { display: inline-block !important; }
-.u-text-center { text-align: center !important; }
-.u-font-small { font-size: 12px !important; }
-.u-font-xs { font-size: 10px !important; }
-.u-mt-20 { margin-top: 20px !important; }
-.u-mt-24 { margin-top: 24px !important; }
-.u-mb-8 { margin-bottom: 8px !important; }
-.u-p-10 { padding: 10px !important; }
-.u-flex-wrap { flex-wrap: wrap !important; }
-.u-border-t { border-top: 1px solid var(--border) !important; }
-.u-w-20 { width: 20px !important; }
-.u-pos-abs { position: absolute !important; }
-.u-right-4 { right: 4px !important; }
-.u-top-4 { top: 4px !important; }
-.u-flex-1 { flex: 1; }
-.u-w-auto { width: auto; }
+.u-flex {
+  display: flex;
+}
+
+.u-flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.u-items-center {
+  align-items: center;
+}
+
+.u-justify-end {
+  justify-content: flex-end;
+}
+
+.u-justify-center {
+  justify-content: center;
+}
+
+.u-justify-between {
+  justify-content: space-between;
+}
+
+.u-gap-4 {
+  gap: 4px;
+}
+
+.u-gap-6 {
+  gap: 6px;
+}
+
+.u-gap-8 {
+  gap: 8px;
+}
+
+.u-gap-12 {
+  gap: 12px;
+}
+
+.u-w-full {
+  width: 100%;
+}
+
+.u-h-auto {
+  height: auto;
+}
+
+.u-hidden {
+  display: none;
+}
+
+.u-display-none {
+  display: none;
+}
+
+.u-text-muted {
+  color: var(--text-muted);
+}
+
+.u-grow {
+  flex-grow: 1 !important;
+}
+
+.u-text-secondary {
+  color: var(--text-secondary);
+}
+
+.u-text-primary {
+  color: var(--text-primary);
+}
+
+.u-text-error {
+  color: var(--accent-red);
+}
+
+.u-text-amber {
+  color: var(--accent-amber);
+}
+
+.u-italic {
+  font-style: italic;
+}
+
+.u-font-sans {
+  font-family: var(--font-sans);
+}
+
+.u-font-mono {
+  font-family: var(--font-mono);
+}
+
+.u-font-bold {
+  font-weight: 700;
+}
+
+.u-bg-transparent {
+  background: transparent !important;
+}
+
+.u-border-b {
+  border-bottom: 1px solid var(--border);
+}
+
+.u-pb-8 {
+  padding-bottom: 8px;
+}
+
+.u-mb-4 {
+  margin-bottom: 4px;
+}
+
+.u-mt-16 {
+  margin-top: 16px;
+}
+
+.u-opacity-0 {
+  opacity: 0;
+}
+
+.u-opacity-1 {
+  opacity: 1;
+}
+
+.u-pointer {
+  cursor: pointer;
+}
+
+.u-no-select {
+  user-select: none;
+}
+
+.u-pos-rel {
+  position: relative;
+}
+
+.u-z-10 {
+  z-index: 10;
+}
+
+.u-m-0 {
+  margin: 0 !important;
+}
+
+.u-p-0 {
+  padding: 0 !important;
+}
+
+.u-p-12 {
+  padding: 12px !important;
+}
+
+.u-p-16 {
+  padding: 16px !important;
+}
+
+.u-p-20 {
+  padding: 20px !important;
+}
+
+.u-block {
+  display: block !important;
+}
+
+.u-inline-block {
+  display: inline-block !important;
+}
+
+.u-text-center {
+  text-align: center !important;
+}
+
+.u-font-small {
+  font-size: 12px !important;
+}
+
+.u-font-xs {
+  font-size: 10px !important;
+}
+
+.u-mt-20 {
+  margin-top: 20px !important;
+}
+
+.u-mt-24 {
+  margin-top: 24px !important;
+}
+
+.u-mb-8 {
+  margin-bottom: 8px !important;
+}
+
+.u-p-10 {
+  padding: 10px !important;
+}
+
+.u-flex-wrap {
+  flex-wrap: wrap !important;
+}
+
+.u-border-t {
+  border-top: 1px solid var(--border) !important;
+}
+
+.u-w-20 {
+  width: 20px !important;
+}
+
+.u-pos-abs {
+  position: absolute !important;
+}
+
+.u-right-4 {
+  right: 4px !important;
+}
+
+.u-top-4 {
+  top: 4px !important;
+}
+
+.u-flex-1 {
+  flex: 1;
+}
+
+.u-w-auto {
+  width: auto;
+}
 
 /* Form elements reset */
-select, option {
+select,
+option {
   background-color: #1a1a24 !important;
   color: var(--text-primary) !important;
   border: 1px solid var(--border);
@@ -208,6 +403,8 @@ select:focus {
 #delete-docs-overlay,
 #loading-overlay,
 #add-db-overlay,
+#edit-conn-overlay,
+#edit-conn-error,
 #add-coll-overlay,
 #add-coll-error,
 #database-view,

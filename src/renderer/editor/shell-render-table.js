@@ -98,7 +98,7 @@ function tableBody(r, rows) {
     pager.innerHTML = `
       <button class="shell-page-btn" data-act="first" ${!hasPrev ? 'disabled' : ''}>« First</button>
       <button class="shell-page-btn" data-act="prev" ${!hasPrev ? 'disabled' : ''}>‹ Prev</button>
-      <span class="shell-page-info">${from}–${to}${totalLabel} &nbsp;·&nbsp; ${pageLabel}</span>
+      <span class="shell-page-info">${escapeHtml(from)}–${escapeHtml(to)}${escapeHtml(totalLabel)} &nbsp;·&nbsp; ${escapeHtml(pageLabel)}</span>
       <button class="shell-page-btn" data-act="next" ${!hasNext ? 'disabled' : ''}>Next ›</button>
       ${lastBtn}`;
     wrap.appendChild(pager);
@@ -141,14 +141,14 @@ function safeStringify(v) {
 export function countChip(r, rows) {
   if (Array.isArray(r.content)) {
     if (r.meta?.paginated) {
-      if (r.meta.total !== undefined) return `<span class="u-text-muted">(${r.meta.total} docs)</span>`;
-      return `<span class="u-text-muted">(page ${r.page})</span>`;
+      if (r.meta.total !== undefined) return `<span class="u-text-muted">(${escapeHtml(r.meta.total)} docs)</span>`;
+      return `<span class="u-text-muted">(page ${escapeHtml(r.page)})</span>`;
     }
     const suffix = r.meta?.truncated ? '+' : '';
     return `<span class="u-text-muted">(${rows.length}${suffix} docs)</span>`;
   }
   if (r.meta?.total !== undefined) {
-    return `<span class="u-text-muted">(${r.meta.total} docs)</span>`;
+    return `<span class="u-text-muted">(${escapeHtml(r.meta.total)} docs)</span>`;
   }
   return '';
 }

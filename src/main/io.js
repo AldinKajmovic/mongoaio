@@ -5,8 +5,8 @@ const path = require('path');
 const { BSON } = require('mongodb');
 const { getClient } = require('../db/connection');
 const { serializeDocEJSON } = require('../db/serialize');
+const { csvCell, flatten, parseCsv, coerceCell } = require('./csv');
 const { reviveExtendedJson } = require('../db/query');
-const { SOCKET_TIMEOUT_MS } = require('../db/constants');
 
 const EXT = { json: 'json', jsonl: 'jsonl', csv: 'csv' };
 const INSERT_BATCH = 1000;
@@ -17,79 +17,12 @@ function filtersFor(format) {
   return [{ name: 'JSON', extensions: ['json'] }];
 }
 
-// --- CSV helpers -----------------------------------------------------------
-
-function csvCell(value) {
-  let s;
-  if (value === null || value === undefined) s = '';
-  else if (typeof value === 'object') s = JSON.stringify(serializeDocEJSON(value));
-  else s = String(value);
-  if (/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
-  return s;
-}
-
-/** Flatten a document to dot-path scalar cells for CSV export. */
-function flatten(doc, prefix, out) {
-  for (const [key, value] of Object.entries(doc)) {
-    const p = prefix ? `${prefix}.${key}` : key;
-    if (value && typeof value === 'object' && !Array.isArray(value)
-      && !(value instanceof Date) && !value._bsontype && !Buffer.isBuffer(value)) {
-      flatten(value, p, out);
-    } else {
-      out[p] = value;
-    }
-  }
-  return out;
-}
-
-/** Minimal RFC-4180-ish CSV parser (handles quotes, escaped quotes, CRLF). */
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = '';
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
-      } else field += ch;
-    } else if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ',') {
-      row.push(field); field = '';
-    } else if (ch === '\n') {
-      row.push(field); field = '';
-      rows.push(row); row = [];
-    } else if (ch === '\r') {
-      // swallow — handled with the following \n
-    } else {
-      field += ch;
-    }
-  }
-  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
-  return rows.filter((r) => !(r.length === 1 && r[0] === ''));
-}
-
-/** Coerce a CSV string cell into a number/boolean/JSON where it clearly is one. */
-function coerceCell(raw) {
-  if (raw === '') return undefined;
-  if (raw === 'true') return true;
-  if (raw === 'false') return false;
-  if (/^-?\d+(\.\d+)?$/.test(raw)) return Number(raw);
-  if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
-    try { return BSON.EJSON.parse(raw, { relaxed: true }); } catch (_) { /* keep string */ }
-  }
-  return raw;
-}
-
 // --- Export ----------------------------------------------------------------
 
 /**
  * Export documents to a file chosen via a save dialog.
  * @param {object} params { side, dbName, collName, format, scope, filter, sort, projection, limit }
- * @returns {Promise<{canceled?: boolean, filePath?, count?}>}
+ * @returns {Promise<{canceled?: boolean, filePath?: string, count?: number, format?: string}>}
  */
 async function exportData(win, _db, params) {
   const {
@@ -110,7 +43,9 @@ async function exportData(win, _db, params) {
   const coll = getClient(side).db(dbName).collection(collName);
   const query = scope === 'all' ? {} : reviveExtendedJson(filter || {});
   const makeCursor = () => {
-    let c = coll.find(query, { projection: projection || {} }).sort(sort || {}).maxTimeMS(SOCKET_TIMEOUT_MS);
+    // No maxTimeMS: it is cumulative across getMores, so it would abort any
+    // export of a large collection part-way through.
+    let c = coll.find(query, { projection: projection || {} }).sort(sort || {});
     if (typeof limit === 'number' && limit > 0) c = c.limit(limit);
     return c;
   };

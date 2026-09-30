@@ -1,5 +1,5 @@
 import { state, elements } from '../utils/state.js';
-import { debounce } from '../utils/dom.js';
+import { debounce, escapeHtml, queryAllHtml } from '../utils/dom.js';
 import { savedConnections } from '../utils/connections.js';
 import { runEditorQuery } from './query.js';
 import { renderEditorTree, filterEditorTree } from './tree-renderer.js';
@@ -31,11 +31,11 @@ function selectCollection(headerEl, alias, dbName, collName) {
 
   if (elements.editorBreadcrumb) {
     elements.editorBreadcrumb.innerHTML = `
-      <span class="editor-crumb">${connLabel}</span>
+      <span class="editor-crumb">${escapeHtml(connLabel)}</span>
       <span class="editor-crumb-sep">&#8250;</span>
-      <span class="editor-crumb">${dbLabel}</span>
+      <span class="editor-crumb">${escapeHtml(dbLabel)}</span>
       <span class="editor-crumb-sep">&#8250;</span>
-      <span class="editor-crumb active">${collLabel}</span>
+      <span class="editor-crumb active">${escapeHtml(collLabel)}</span>
     `;
   }
 
@@ -46,13 +46,13 @@ function selectCollection(headerEl, alias, dbName, collName) {
 
 // Initialize tree search
 const editorTreeSearchDebounced = debounce((query) => filterEditorTree(query), 300);
-const treeSearchInput = document.getElementById('editor-tree-search');
+const treeSearchInput = /** @type {HTMLInputElement | null} */ (document.getElementById('editor-tree-search'));
 if (treeSearchInput) {
-  treeSearchInput.addEventListener('input', e => editorTreeSearchDebounced(e.target.value));
+  treeSearchInput.addEventListener('input', () => editorTreeSearchDebounced(treeSearchInput.value));
 }
 
 // Result tab switching
-document.querySelectorAll('.editor-result-tab').forEach(tab => {
+queryAllHtml('.editor-result-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     const targetTab = tab.dataset.editorTab;
     document.querySelectorAll('.editor-result-tab').forEach(t => t.classList.remove('active'));

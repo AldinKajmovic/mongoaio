@@ -1,25 +1,8 @@
-const { getClient } = require('./connection');
 const { SHELL_RESULT_LIMIT, SHELL_PAGE_SIZE } = require('./constants');
 const { serializeValue } = require('./shell-serialize');
 const { FIND_META, buildDbProxy, buildBsonHelpers } = require('./shell-proxies');
 const { readBatch, storeCursor, shellCursorNext, closeShellCursor } = require('./shell-cursors');
-
-// ===========================================================================
-// SECURITY: this module intentionally evaluates arbitrary user-authored
-// JavaScript (a MongoDB shell — same capability as `mongosh`). The operator is
-// the local user typing into their own desktop app, so executing their own
-// code against their own connections is the feature, not an injection vector.
-//
-// This is an ACCEPTED, DOCUMENTED exception to the "no eval()/Function()" rule
-// in AGENTS.md §6/§7 (owner: maintainer; scope: local single-user shell only).
-//
-// NOT A SANDBOX: the `SHADOWED` list below is defense-in-depth to keep casual
-// typos (`require`, `process`, ...) from resolving, but it does NOT contain a
-// determined escape (e.g. via `constructor`). Do not rely on it for isolation,
-// and do not expose this evaluator to any remote/untrusted input. If untrusted
-// input ever reaches here, replace this with a real isolate (separate process /
-// vm with a hardened context), not more shadowing.
-// ===========================================================================
+const { beginShellOp, runShellOp } = require('./shell-op');
 
 // ---------------------------------------------------------------------------
 // Evaluation
@@ -160,14 +143,24 @@ async function resolveResult(value) {
 /**
  * Evaluate a mongosh-style command/script.
  *
- * @param {'source'|'target'} side
+ * Runs inside the shell worker (shell-worker.js); shell-host.js is the entry
+ * point the rest of the app uses.
+ *
+ * @param {import('mongodb').MongoClient} client  The worker's own client.
  * @param {string} dbName
  * @param {string} code   Raw mongosh JavaScript.
+ * @param {{ page?: number, pageSize?: number, opId?: string, maxTimeMS?: number }} [options]
+ *   opId makes the run cancellable via cancel-op; maxTimeMS bounds the whole script.
  * @returns {Promise<object>} { result, isArray, count, truncated, printed }
  */
-async function evaluateShell(side, dbName, code, options = {}) {
-  const client = getClient(side);
-  const db = buildDbProxy(client, dbName);
+async function evaluateShell(client, dbName, code, options = {}) {
+  const op = beginShellOp(options.opId, client, options.maxTimeMS);
+  return runShellOp(op, () => evaluateInScope(client, dbName, code, options, op));
+}
+
+/** Run the user code with `db` bound to `op`, then shape its result for the renderer. */
+async function evaluateInScope(client, dbName, code, options, op) {
+  const db = buildDbProxy(client, dbName, op);
 
   const printed = [];
   const print = (...args) => {

@@ -1,7 +1,8 @@
 const { getClient } = require('./connection');
 const { serializeDoc } = require('./serialize');
 const { reviveExtendedJson } = require('./query');
-const { DEFAULT_QUERY_LIMIT, SOCKET_TIMEOUT_MS } = require('./constants');
+const { DEFAULT_QUERY_LIMIT } = require('./constants');
+const { resolveTimeout } = require('./op-registry');
 
 async function explainQuery(side, dbName, collName, options = {}, verbosity = 'executionStats') {
   const allowed = ['queryPlanner', 'executionStats', 'allPlansExecution'];
@@ -16,7 +17,7 @@ async function explainQuery(side, dbName, collName, options = {}, verbosity = 'e
     .sort(sort)
     .skip(skip)
     .limit(limit)
-    .maxTimeMS(SOCKET_TIMEOUT_MS);
+    .maxTimeMS(resolveTimeout(options.maxTimeMS));
 
   const raw = await cursor.explain(mode);
 

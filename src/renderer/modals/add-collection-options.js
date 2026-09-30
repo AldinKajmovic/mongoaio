@@ -2,7 +2,7 @@ import { $ } from '../utils/state.js';
 
 export function buildCollectionOptions() {
   const opts = {};
-  const type = document.querySelector('input[name="add-coll-type"]:checked')?.value || 'default';
+  const type = (/** @type {HTMLInputElement | null} */ (document.querySelector('input[name="add-coll-type"]:checked')))?.value || 'default';
 
   if (type === 'capped') {
     const size = parseInt($('#add-coll-capped-size')?.value, 10);

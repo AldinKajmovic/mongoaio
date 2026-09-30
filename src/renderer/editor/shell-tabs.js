@@ -1,4 +1,4 @@
-import { escapeHtml } from '../utils/dom.js';
+import { escapeHtml, closestTarget } from '../utils/dom.js';
 import { confirmToast } from '../utils/ui.js';
 import { hideShellPanel } from './shell.js';
 import { renderResultItem, renderEmptyResults } from './shell-renderer.js';
@@ -83,7 +83,7 @@ export function switchTab(id) {
 function saveActiveTabState() {
   const tab = getActiveTab();
   if (!tab) return;
-  const textarea = document.getElementById('editor-shell-textarea');
+  const textarea = /** @type {HTMLTextAreaElement | null} */ (document.getElementById('editor-shell-textarea'));
   if (textarea) tab.text = textarea.value;
 }
 
@@ -91,7 +91,7 @@ function restoreTabState() {
   const tab = getActiveTab();
   if (!tab) return;
 
-  const textarea = document.getElementById('editor-shell-textarea');
+  const textarea = /** @type {HTMLTextAreaElement | null} */ (document.getElementById('editor-shell-textarea'));
   if (textarea) textarea.value = tab.text;
 
   const resultsEl = document.getElementById('editor-shell-results');
@@ -148,9 +148,9 @@ function renderTabBar() {
 
   bar.innerHTML = tabs.map(t => {
     const active = t.id === activeTabId ? ' active' : '';
-    return `<button class="shell-tab${active}" data-tab-id="${t.id}">
+    return `<button class="shell-tab${active}" data-tab-id="${escapeHtml(t.id)}">
       <span class="shell-tab-label">${escapeHtml(t.label)}</span>
-      <span class="shell-tab-close" data-tab-id="${t.id}" title="Close">&times;</span>
+      <span class="shell-tab-close" data-tab-id="${escapeHtml(t.id)}" title="Close">&times;</span>
     </button>`;
   }).join('') +
     '<button class="shell-tab shell-tab-add" title="New Shell Tab">+</button>';
@@ -159,20 +159,20 @@ function renderTabBar() {
 // --- Delegation ---
 
 document.addEventListener('click', (e) => {
-  const close = e.target.closest('.shell-tab-close');
+  const close = closestTarget(e, '.shell-tab-close');
   if (close) {
     e.stopPropagation();
     closeTab(Number(close.dataset.tabId));
     return;
   }
 
-  const addBtn = e.target.closest('.shell-tab-add');
+  const addBtn = closestTarget(e, '.shell-tab-add');
   if (addBtn) {
     addTab();
     return;
   }
 
-  const tabBtn = e.target.closest('.shell-tab[data-tab-id]');
+  const tabBtn = closestTarget(e, '.shell-tab[data-tab-id]');
   if (tabBtn) {
     switchTab(Number(tabBtn.dataset.tabId));
   }

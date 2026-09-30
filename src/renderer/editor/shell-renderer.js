@@ -1,7 +1,8 @@
 import { elements } from '../utils/state.js';
-import { escapeHtml } from '../utils/dom.js';
+import { escapeHtml, closestTarget } from '../utils/dom.js';
 import { pushResult, findResult, removeResult } from './shell-tabs.js';
 import { PAGE_SIZE, renderBody, toRows, countChip } from './shell-render-table.js';
+import { runCancellable } from '../utils/query-timeout.js';
 
 /**
  * Append a result item to the shell results area and persist it in the active tab.
@@ -35,14 +36,14 @@ export function renderResultItem(r) {
 
   const isArray = Array.isArray(r.content);
   const rows = toRows(r.content);
-  const countLabel = countChip(r, rows);
+  const countHtml = countChip(r, rows);
   const canToggle = isArray && rows.length > 0;
   const toggleLabel = r.view === 'json' ? 'Table' : 'JSON';
 
   const header = document.createElement('div');
   header.className = 'shell-result-header';
   header.innerHTML = `
-    <div class="shell-result-query">${escapeHtml(r.query)} ${countLabel}</div>
+    <div class="shell-result-query">${escapeHtml(r.query)} ${countHtml}</div>
     <div class="shell-result-actions">
       ${canToggle ? `<button class="shell-view-toggle" title="Toggle table/JSON view">${toggleLabel}</button>` : ''}
       <span class="shell-result-time">${escapeHtml(r.time || '')}</span>
@@ -104,7 +105,8 @@ async function serverPage(item, r, act) {
     }
     // Jump, cache miss, or expired cursor: re-query that page directly.
     if (!res) {
-      res = await window.api.shellEval(m.side, m.db, m.code, { page: target, pageSize });
+      res = await runCancellable('Loading page…',
+        (opts) => window.api.shellEval(m.side, m.db, m.code, { ...opts, page: target, pageSize }));
     }
     if (res && !res.error) {
       r.content = res.result;
@@ -119,12 +121,12 @@ async function serverPage(item, r, act) {
 }
 
 document.addEventListener('click', (e) => {
-  const item = e.target.closest('.shell-result-item');
+  const item = closestTarget(e, '.shell-result-item');
   if (!item || !item.dataset.resultId) return;
   if (!item.closest('#editor-shell-results')) return;
   const id = item.dataset.resultId;
 
-  if (e.target.closest('.shell-result-remove')) {
+  if (closestTarget(e, '.shell-result-remove')) {
     e.stopPropagation();
     const container = item.parentElement;
     const r = findResult(id);
@@ -135,7 +137,7 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  const pageBtn = e.target.closest('.shell-page-btn');
+  const pageBtn = closestTarget(e, '.shell-page-btn');
   if (pageBtn) {
     const r = findResult(id);
     if (!r) return;
@@ -154,7 +156,7 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  if (e.target.closest('.shell-view-toggle')) {
+  if (closestTarget(e, '.shell-view-toggle')) {
     const r = findResult(id);
     if (!r) return;
     r.view = r.view === 'table' ? 'json' : 'table';

@@ -1,7 +1,7 @@
 import { state } from '../utils/state.js';
 import { showLoading, hideLoading, toast } from '../utils/ui.js';
 import { highlightText, escapeHtml } from '../utils/dom.js';
-import { currentRenderedItems, currentEJSONItems, runEditorQuery } from './query.js';
+import { currentRenderedItems, currentEJSONItems, runEditorQuery, writeIdFor } from './query.js';
 
 /**
  * Repaint the highlight backdrop behind an open JSON editor. A textarea's
@@ -12,7 +12,7 @@ import { currentRenderedItems, currentEJSONItems, runEditorQuery } from './query
  * @param {number} [activeIndex] Index of the current match to emphasise
  */
 export function renderJsonEditorHighlights(query, activeIndex = -1) {
-  const ta = document.querySelector('.editor-json-inline-textarea');
+  const ta = /** @type {HTMLTextAreaElement | null} */ (document.querySelector('.editor-json-inline-textarea'));
   if (!ta) return;
   const layer = ta.closest('.editor-json-edit-wrapper')?.querySelector('.editor-json-edit-highlights');
   if (!layer) return;
@@ -69,7 +69,7 @@ export function startJsonInlineEdit(event, docIndex) {
   // Open the editor on the value the user searched for, instead of letting a
   // focused full-height textarea jump the panel to the bottom.
   const panel = container.closest('.editor-data-panel');
-  const sq = document.getElementById('editor-search-input')?.value || '';
+  const sq = (/** @type {HTMLInputElement | null} */ (document.getElementById('editor-search-input')))?.value || '';
   const matchIdx = sq ? originalJson.toLowerCase().indexOf(sq.toLowerCase()) : -1;
   renderJsonEditorHighlights(sq, matchIdx >= 0 ? 0 : -1);
 
@@ -108,7 +108,7 @@ export function startJsonInlineEdit(event, docIndex) {
           state.editor.side,
           state.editor.db,
           state.editor.coll,
-          doc._id,
+          writeIdFor(docIndex),
           updatedDoc
         );
         hideLoading();
@@ -129,12 +129,12 @@ export function startJsonInlineEdit(event, docIndex) {
     // Keep the editor open when focus moves to the find bar/button, so the
     // user can search within the document they're editing.
     const rt = e.relatedTarget;
-    if (rt && (rt.closest('#editor-search-bar') || rt.id === 'btn-editor-search-local')) return;
+    if (rt instanceof Element && (rt.closest('#editor-search-bar') || rt.id === 'btn-editor-search-local')) return;
     finish(true);
   };
   textarea.oninput = () => {
     updateHeight();
-    renderJsonEditorHighlights(document.getElementById('editor-search-input')?.value || '');
+    renderJsonEditorHighlights((/** @type {HTMLInputElement | null} */ (document.getElementById('editor-search-input')))?.value || '');
   };
   textarea.onkeydown = (e) => {
     if (e.key === 'Enter') {

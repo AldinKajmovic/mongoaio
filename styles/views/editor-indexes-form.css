@@ -1,0 +1,113 @@
+/* ===========================================================================
+   Index management panel — create index form
+   (split from editor-indexes.css — imported right after it; keep order)
+   =========================================================================== */
+
+/* --- Create index form ------------------------------------------------------ */
+
+.idx-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.idx-field-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.idx-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.idx-field-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 12px !important;
+  font-size: 13px;
+}
+
+.idx-field-dir {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.idx-field-remove {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+.idx-field-remove:hover {
+  color: var(--accent-red);
+}
+
+.idx-add-field {
+  align-self: flex-start;
+}
+
+.idx-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.idx-hint code {
+  font-family: var(--font-mono);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  color: var(--text-secondary);
+}
+
+.idx-options-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.idx-option-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.idx-option-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.idx-option-inline-grow {
+  flex: 1 1 auto;
+  min-width: 260px;
+}
+
+.idx-option-input {
+  padding: 7px 10px !important;
+  font-size: 12px;
+  min-width: 140px;
+}
+
+.idx-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}

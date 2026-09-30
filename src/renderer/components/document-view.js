@@ -1,6 +1,6 @@
 import { state, elements } from '../utils/state.js';
 import { showLoading, hideLoading, toast } from '../utils/ui.js';
-import { debounce, emptyState } from '../utils/dom.js';
+import { debounce, emptyState, escapeHtml } from '../utils/dom.js';
 import { copyDoc, deleteDoc, startEditField } from './document-crud.js';
 import { renderDocTabDifferent, renderDocTabUnique } from './document-item-renderer.js';
 import { revealFieldValue } from '../utils/json-tree.js';
@@ -33,9 +33,9 @@ export async function loadDocuments(sourceDbName, targetDbName, collName) {
   // Stats
   const activeTab = state.activeDocTab;
   elements.docStats.innerHTML = `
-    <span class="stat-pill common clickable ${activeTab === 'different' ? 'active' : ''}" data-tab="different">${result.counts.common} common</span>
-    <span class="stat-pill source-only clickable ${activeTab === 'only-source' ? 'active' : ''}" data-tab="only-source">${result.counts.onlyInSource} source only</span>
-    <span class="stat-pill target-only clickable ${activeTab === 'only-target' ? 'active' : ''}" data-tab="only-target">${result.counts.onlyInTarget} target only</span>
+    <span class="stat-pill common clickable ${activeTab === 'different' ? 'active' : ''}" data-tab="different">${escapeHtml(result.counts.common)} common</span>
+    <span class="stat-pill source-only clickable ${activeTab === 'only-source' ? 'active' : ''}" data-tab="only-source">${escapeHtml(result.counts.onlyInSource)} source only</span>
+    <span class="stat-pill target-only clickable ${activeTab === 'only-target' ? 'active' : ''}" data-tab="only-target">${escapeHtml(result.counts.onlyInTarget)} target only</span>
   `;
 
   renderDocTab(state.activeDocTab);
@@ -57,7 +57,7 @@ export function updatePaginationUI() {
   // Render simple page numbers (show up to 5 pages around current)
   const maxVisible = 5;
   let startPage = Math.max(1, p.page - Math.floor(maxVisible / 2));
-  let endPage = Math.min(p.totalPages, startPage + maxVisible - 1);
+  const endPage = Math.min(p.totalPages, startPage + maxVisible - 1);
   if (endPage - startPage < maxVisible - 1) {
     startPage = Math.max(1, endPage - maxVisible + 1);
   }

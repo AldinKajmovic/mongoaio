@@ -1,23 +1,33 @@
 const { autoUpdater } = require('electron-updater');
-const { ipcMain } = require('electron');
+const { ipcMain, app } = require('electron');
+const fs = require('fs');
+const path = require('path');
+const { log } = require('./logger');
 
-let mainWindow = null;
+/** @type {() => (import('electron').BrowserWindow|null)} */
+let getWindow = () => null;
 
 /**
  * Send update events to the renderer via IPC.
  */
 function sendToRenderer(channel, data) {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(channel, data);
+  const win = getWindow();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send(channel, data);
   }
 }
 
-/**
- * Initialize the auto-updater.
- * @param {BrowserWindow} win — the main application window
- */
-function initUpdater(win) {
-  mainWindow = win;
+/** Why this install can't self-update, or null. electron-updater only updates AppImage and builder-tagged deb/rpm installs on Linux. */
+function unsupportedReason() {
+  if (!app.isPackaged) return 'not a packaged build';
+  if (process.platform !== 'linux' || process.env.APPIMAGE) return null;
+  const packageType = path.join(process.resourcesPath, 'package-type');
+  return fs.existsSync(packageType) ? null : 'Linux install is neither an AppImage nor a tagged deb/rpm';
+}
+
+/** Initialize the auto-updater. */
+function initUpdater(windowGetter) {
+  getWindow = windowGetter;
 
   // Don't auto-download — let the user decide
   autoUpdater.autoDownload = false;
@@ -66,6 +76,12 @@ function initUpdater(win) {
     const { app } = require('electron');
     return app.getVersion();
   });
+
+  const reason = unsupportedReason();
+  if (reason) {
+    log('info', 'updater', `Auto-update disabled: ${reason}`);
+    return;
+  }
 
   // Check for updates shortly after launch (give the app time to fully load)
   setTimeout(() => {

@@ -1,15 +1,4 @@
-import { DEFAULT_PAGE_SIZE, TOAST_DURATION_MS } from './constants.js';
-
-window.onerror = function (message, source, lineno, colno, error) {
-  console.error("GLOBAL ERROR:", message, source, lineno, colno, error);
-  try {
-    const el = document.createElement('div');
-    el.className = 'toast error';
-    el.textContent = `JS Error: ${message} at line ${lineno}`;
-    document.getElementById('toast-container').appendChild(el);
-    setTimeout(() => el.remove(), TOAST_DURATION_MS);
-  } catch (e) { }
-};
+import { DEFAULT_PAGE_SIZE } from './constants.js';
 
 export const state = {
   connected: false,
@@ -40,12 +29,11 @@ export const state = {
     limit: DEFAULT_PAGE_SIZE,
     skip: 0,
     selectedField: null,
-    selectedDocIndex: null
+    selectedDocIndex: null,
+    dataView: 'tree'
   }
 };
 
-// DOM helpers
-// Instead of document.querySelector('.class'), you can type $('.class')
 export const $ = (className) => document.querySelector(className);
 export const $$ = (className) => document.querySelectorAll(className);
 
@@ -79,8 +67,6 @@ export const elements = {
   get docStats() { return $('#doc-stats'); },
   get docContent() { return $('#doc-content'); },
 
-
-  // DB Editor elements
   get editorView() { return $('#db-editor-view'); },
   get editorQueryFilter() { return $('#editor-query-filter'); },
   get editorQuerySort() { return $('#editor-query-sort'); },
@@ -132,6 +118,7 @@ export const elements = {
 
   get loadingOverlay() { return $('#loading-overlay'); },
   get loadingText() { return $('#loading-text'); },
+  get loadingCancel() { return $('#loading-cancel'); },
 
   get modalOverlay() { return $('#modal-overlay'); },
   get modalTitle() { return $('#modal-title'); },
@@ -185,14 +172,20 @@ export const elements = {
   get deleteDocsPredefined() { return $('#delete-docs-predefined'); },
   get deleteDocsHistory() { return $('#delete-docs-history'); },
 
-  // Connection UI
   get selectSourceSaved() { return $('#select-source-saved'); },
   get selectTargetSaved() { return $('#select-target-saved'); },
   get newConnAlias() { return $('#new-conn-alias'); },
   get newConnUrl() { return $('#new-conn-url'); },
   get btnSaveConn() { return $('#btn-save-conn'); },
+  get editConnOverlay() { return $('#edit-conn-overlay'); },
+  get editConnAlias() { return $('#edit-conn-alias'); },
+  get editConnUrl() { return $('#edit-conn-url'); },
+  get editConnSummary() { return $('#edit-conn-summary'); },
+  get editConnError() { return $('#edit-conn-error'); },
+  get editConnSave() { return $('#edit-conn-save'); },
+  get editConnCancel() { return $('#edit-conn-cancel'); },
+  get editConnClose() { return $('#edit-conn-close'); },
 
-  // Add DB modal
   get addDbOverlay() { return $('#add-db-overlay'); },
   get addDbName() { return $('#add-db-name'); },
   get addDbError() { return $('#add-db-error'); },

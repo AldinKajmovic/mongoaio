@@ -1,6 +1,7 @@
 import { state, elements } from '../utils/state.js';
 import { toast, showLoading, hideLoading } from '../utils/ui.js';
 import { parseRelaxedJSON, escapeHtml } from '../utils/dom.js';
+import { getQueryTimeoutMs } from '../utils/query-timeout.js';
 
 // ---------------------------------------------------------------------------
 // Explain-plan overlay. Reads the current query bar (#editor-query-*), runs
@@ -135,7 +136,7 @@ async function runExplain(verbosity) {
   panel.innerHTML = panelHtml();
   wirePanelControls();
 
-  const select = document.getElementById('explain-verbosity');
+  const select = /** @type {HTMLSelectElement | null} */ (document.getElementById('explain-verbosity'));
   if (select) select.value = verbosity;
 
   if (!db || !coll) {
@@ -156,7 +157,7 @@ async function runExplain(verbosity) {
 
   showLoading('Running explain...');
   try {
-    const res = await window.api.explainQuery(side, db, coll, queryOpts, verbosity);
+    const res = await window.api.explainQuery(side, db, coll, { ...queryOpts, maxTimeMS: getQueryTimeoutMs() }, verbosity);
     if (res && res.error) {
       toast(res.error, 'error');
       const body = document.getElementById('explain-body');
@@ -184,12 +185,12 @@ function wirePanelControls() {
 
   const rerunBtn = document.getElementById('btn-explain-rerun');
   if (rerunBtn) rerunBtn.addEventListener('click', () => {
-    const select = document.getElementById('explain-verbosity');
+    const select = /** @type {HTMLSelectElement | null} */ (document.getElementById('explain-verbosity'));
     lastVerbosity = select ? select.value : lastVerbosity;
     runExplain(lastVerbosity);
   });
 
-  const select = document.getElementById('explain-verbosity');
+  const select = /** @type {HTMLSelectElement | null} */ (document.getElementById('explain-verbosity'));
   if (select) select.addEventListener('change', () => {
     lastVerbosity = select.value;
     runExplain(lastVerbosity);

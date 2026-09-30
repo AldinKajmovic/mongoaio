@@ -1,0 +1,118 @@
+/* =============================================
+   Editor — Staged (Pending) Field Edits
+   Dirty row marks, the changes bar and its
+   review popup, plus the field-path popover.
+   ============================================= */
+
+/* --- Rows carrying a staged change --- */
+.editor-field-row.editor-field-pending {
+  background: rgba(245, 158, 11, 0.10);
+  box-shadow: inset 3px 0 0 var(--accent-amber);
+}
+
+.editor-field-row.editor-field-pending .editor-field-value {
+  color: var(--accent-amber);
+  font-weight: 600;
+}
+
+.editor-field-row.editor-field-pending-remove {
+  background: rgba(239, 68, 68, 0.10);
+  box-shadow: inset 3px 0 0 var(--accent-red);
+}
+
+.editor-field-row.editor-field-pending-remove .editor-field-key,
+.editor-field-row.editor-field-pending-remove .editor-field-value {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.editor-field-row.editor-field-pending-remove + .editor-nested-children {
+  opacity: 0.45;
+}
+
+/* Just written to the database — fades back to normal on its own. */
+.editor-field-row.editor-field-saved {
+  background: rgba(34, 197, 94, 0.14);
+  box-shadow: inset 3px 0 0 var(--accent-green);
+  transition: background 1s ease, box-shadow 1s ease;
+}
+
+/* --- Field path popover --- */
+.editor-field-path-popover {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  padding: 10px 12px;
+  max-width: 420px;
+  z-index: 1100;
+}
+
+.editor-field-path-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.editor-field-path-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.editor-field-path-type {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.editor-field-path-segments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.editor-field-path-chip {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-amber);
+  word-break: break-all;
+}
+
+.editor-field-path-chip.is-index {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.10);
+}
+
+.editor-field-path-sep {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.editor-field-path-full {
+  display: block;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  user-select: text;
+  word-break: break-all;
+}
+
+.editor-field-path-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}

@@ -1,6 +1,6 @@
 import { state, elements } from '../utils/state.js';
 import { showLoading, hideLoading, toast } from '../utils/ui.js';
-import { debounce, emptyState } from '../utils/dom.js';
+import { debounce, emptyState, escapeHtml, closestTarget, queryAllHtml } from '../utils/dom.js';
 import { confirmDialog } from '../modals/base.js';
 import { navigateTo } from '../utils/navigation.js';
 
@@ -49,37 +49,37 @@ export function renderCollections({ common, onlyInSource, onlyInTarget }, source
   ];
 
   elements.sourceCollList.innerHTML = sourceItems.length ? sourceItems.map(item => `
-    <div class="item-card coll-card" data-coll="${item.name}" data-status="${item.status}">
-      <span class="item-name">${item.name}</span>
+    <div class="item-card coll-card" data-coll="${escapeHtml(item.name)}" data-status="${escapeHtml(item.status)}">
+      <span class="item-name">${escapeHtml(item.name)}</span>
       <div class="u-flex u-items-center u-gap-6">
-        <span class="item-status ${item.status}">${item.status === 'common' ? '✓ Common' : '⚠ Source only'}</span>
-        ${item.status === 'missing' ? `<button class="btn btn-sm btn-target copy-coll-btn" data-from="source" data-to="target" data-coll="${item.name}" title="Copy to target">-> Copy</button>` : ''}
-        <button class="btn btn-sm btn-danger drop-coll-btn" data-side="source" data-coll="${item.name}" title="Drop collection">✕</button>
+        <span class="item-status ${escapeHtml(item.status)}">${item.status === 'common' ? '✓ Common' : '⚠ Source only'}</span>
+        ${item.status === 'missing' ? `<button class="btn btn-sm btn-target copy-coll-btn" data-from="source" data-to="target" data-coll="${escapeHtml(item.name)}" title="Copy to target">-> Copy</button>` : ''}
+        <button class="btn btn-sm btn-danger drop-coll-btn" data-side="source" data-coll="${escapeHtml(item.name)}" title="Drop collection">✕</button>
       </div>
     </div>
   `).join('') : emptyState('No collections');
 
   elements.targetCollList.innerHTML = targetItems.length ? targetItems.map(item => `
-    <div class="item-card coll-card" data-coll="${item.name}" data-status="${item.status}">
-      <span class="item-name">${item.name}</span>
+    <div class="item-card coll-card" data-coll="${escapeHtml(item.name)}" data-status="${escapeHtml(item.status)}">
+      <span class="item-name">${escapeHtml(item.name)}</span>
       <div class="u-flex u-items-center u-gap-6">
-        <span class="item-status ${item.status}">${item.status === 'common' ? '✓ Common' : '⚠ Target only'}</span>
-        ${item.status === 'missing' ? `<button class="btn btn-sm btn-source copy-coll-btn" data-from="target" data-to="source" data-coll="${item.name}" title="Copy to source"><- Copy</button>` : ''}
-        <button class="btn btn-sm btn-danger drop-coll-btn" data-side="target" data-coll="${item.name}" title="Drop collection">✕</button>
+        <span class="item-status ${escapeHtml(item.status)}">${item.status === 'common' ? '✓ Common' : '⚠ Target only'}</span>
+        ${item.status === 'missing' ? `<button class="btn btn-sm btn-source copy-coll-btn" data-from="target" data-to="source" data-coll="${escapeHtml(item.name)}" title="Copy to source"><- Copy</button>` : ''}
+        <button class="btn btn-sm btn-danger drop-coll-btn" data-side="target" data-coll="${escapeHtml(item.name)}" title="Drop collection">✕</button>
       </div>
     </div>
   `).join('') : emptyState('No collections');
 
   // Click to compare documents (for all collections)
-  document.querySelectorAll('.coll-card').forEach(card => {
+  queryAllHtml('.coll-card').forEach(card => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.copy-coll-btn') || e.target.closest('.drop-coll-btn')) return;
+      if (closestTarget(e, '.copy-coll-btn') || closestTarget(e, '.drop-coll-btn')) return;
       navigateTo('documents', { collName: card.dataset.coll, sourceDb: sourceDbName, targetDb: targetDbName });
     });
   });
 
   // Copy collection buttons
-  document.querySelectorAll('.copy-coll-btn').forEach(btn => {
+  queryAllHtml('.copy-coll-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const from = btn.dataset.from;
@@ -107,7 +107,7 @@ export function renderCollections({ common, onlyInSource, onlyInTarget }, source
   });
 
   // Drop collection buttons
-  document.querySelectorAll('.drop-coll-btn').forEach(btn => {
+  queryAllHtml('.drop-coll-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const side = btn.dataset.side;
@@ -135,7 +135,7 @@ function setCollFilter(filter) {
 
 // Global Event Delegation for Collection View stats
 elements.collStats.addEventListener('click', (e) => {
-  const pill = e.target.closest('.stat-pill');
+  const pill = closestTarget(e, '.stat-pill');
   if (pill && pill.dataset.filter) {
     setCollFilter(pill.dataset.filter);
   }

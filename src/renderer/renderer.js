@@ -6,6 +6,7 @@
 import './utils/boot.js';
 
 // 1. Load foundation (state.js reads DOM created above)
+import './utils/diagnostics.js';
 import './utils/state.js';
 import './utils/dom.js';
 import './utils/ui.js';
@@ -25,7 +26,12 @@ import './components/leaf-edit.js';
 // 4. Editor modules
 import './editor/tree.js';
 import './editor/query.js';
+import './editor/query-controls.js';
 import './editor/inline-edit.js';
+import './editor/field-crud.js';
+import './editor/field-path.js';
+import './editor/pending-commit.js';
+import './editor/pending-bar.js';
 import './editor/search.js';
 import { initEditorShellLogic } from './editor/shell.js';
 import { initMetricsView } from './editor/metrics.js';

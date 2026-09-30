@@ -1,6 +1,5 @@
 import { escapeHtml } from './dom.js';
 
-// Keys preferred as a human-readable label for an object node, in priority order.
 const LABEL_KEYS = ['_id', 'id', 'name', 'label', 'title', 'key'];
 const MAX_LABEL_LEN = 40;
 
@@ -8,7 +7,6 @@ function truncate(str) {
   return str.length > MAX_LABEL_LEN ? `${str.slice(0, MAX_LABEL_LEN)}…` : str;
 }
 
-// Values are already serialized to plain JSON, so a string compare is sufficient.
 function deepEqual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -19,7 +17,7 @@ export function renderPrimitive(value) {
   const type = typeof value;
   if (type === 'string') return `<span class="jt-string">"${escapeHtml(value)}"</span>`;
   if (type === 'number') return `<span class="jt-number">${escapeHtml(String(value))}</span>`;
-  if (type === 'boolean') return `<span class="jt-boolean">${value}</span>`;
+  if (type === 'boolean') return `<span class="jt-boolean">${escapeHtml(String(value))}</span>`;
   return `<span class="jt-value">${escapeHtml(String(value))}</span>`;
 }
 
@@ -40,7 +38,6 @@ function objectSummary(obj) {
   return parts.length ? `{ ${parts.join(' · ')} } · ${count}` : `{ ${count} }`;
 }
 
-// Resolve the counterpart child value on the opposite side, for diff marking.
 function counterpart(other, key, isArray) {
   if (other === null || typeof other !== 'object') return undefined;
   if (isArray && !Array.isArray(other)) return undefined;
@@ -69,9 +66,6 @@ export function renderJsonTree(value, key = null, depth = 0, autoOpenDepth = 1, 
   const isObject = value !== null && typeof value === 'object';
   const path = ctx ? ctx.path : null;
 
-  // A sync checkbox for each differing node (both sides — the checkbox just
-  // marks the path; the Sync buttons choose direction). Never on the root, which
-  // the field-level checkbox already covers.
   const syncCell = (differs && ctx && key !== null)
     ? `<input type="checkbox" class="field-sync-checkbox jt-sync" data-doc-id="${escapeHtml(String(ctx.docId))}" data-field="${escapeHtml(path)}" title="Select this path to sync">`
     : '';
@@ -112,9 +106,6 @@ export function renderJsonTree(value, key = null, depth = 0, autoOpenDepth = 1, 
     </div>`;
 }
 
-// Serialized values larger than this are deferred behind a reveal button so a
-// single huge field (e.g. a `cards` array) cannot stall the initial render by
-// forcing the whole tree's HTML to be built and parsed up front.
 const LAZY_THRESHOLD = 2000;
 
 /**
@@ -142,14 +133,13 @@ export function formatFieldValue(val, other = undefined, compare = false, opts =
           ? `Array(${val.length})`
           : `{ ${Object.keys(val).length} field${Object.keys(val).length !== 1 ? 's' : ''} }`;
         const sizeKb = Math.max(1, Math.round(json.length / 1024));
-        // Values (and their counterpart, for diffing) live in data attributes —
-        // cheap strings — until revealed, so DOM nodes are built only on demand.
         const otherAttr = (compare && other !== undefined)
-          ? ` data-other='${JSON.stringify(other).replace(/'/g, '&apos;')}'` : '';
+          ? ` data-other='${escapeHtml(JSON.stringify(other))}'` : '';
         const ctxAttr = ctx
           ? ` data-base-path="${escapeHtml(path)}" data-doc-id="${escapeHtml(String(docId))}"` : '';
-        return `<div class="lazy-field" id="${lazyId}" data-json='${json.replace(/'/g, '&apos;')}' data-compare="${compare ? '1' : '0'}"${otherAttr}${ctxAttr}>
-          <button class="btn btn-ghost btn-xs reveal-field-btn" data-field-id="${lazyId}">Show value · ${summary} · ~${sizeKb} KB</button>
+        const id = escapeHtml(lazyId);
+        return `<div class="lazy-field" id="${id}" data-json='${escapeHtml(json)}' data-compare="${compare ? '1' : '0'}"${otherAttr}${ctxAttr}>
+          <button class="btn btn-ghost btn-xs reveal-field-btn" data-field-id="${id}">Show value · ${summary} · ~${sizeKb} KB</button>
         </div>`;
       }
     }

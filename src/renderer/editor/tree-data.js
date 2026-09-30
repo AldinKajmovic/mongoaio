@@ -13,7 +13,7 @@ export const editorConnectedAliases = new Set();
 function treePlaceholder(text, cls = 'u-text-amber u-font-sans') {
   // SECURITY: escapeHtml prevents XSS from error messages or other dynamic text
   return '<div class="tree-node" data-type="placeholder"><div class="tree-node-header tree-leaf">' +
-    `<span class="tree-node-label ${cls}">${escapeHtml(text)}</span></div></div>`;
+    `<span class="tree-node-label ${escapeHtml(cls)}">${escapeHtml(text)}</span></div></div>`;
 }
 
 /**
@@ -65,7 +65,7 @@ export async function editorConnectAlias(alias) {
   if (result.error) {
     editorConnectedAliases.delete(alias);
     ch.innerHTML = treePlaceholder('Failed: ' + result.error, 'u-text-error u-font-sans');
-    const d = connNode.querySelector('.tree-conn-status');
+    const d = /** @type {HTMLElement | null} */ (connNode.querySelector('.tree-conn-status'));
     if (d) { d.className = 'tree-conn-status disconnected'; d.title = 'Disconnected'; }
     toast(`Connection failed: ${result.error}`, 'error');
     return;
@@ -80,7 +80,7 @@ export async function editorConnectAlias(alias) {
   setStatus('connected');
   elements.btnDisconnect.style.display = 'inline-flex';
 
-  const dot = connNode.querySelector('.tree-conn-status');
+  const dot = /** @type {HTMLElement | null} */ (connNode.querySelector('.tree-conn-status'));
   if (dot) { dot.className = 'tree-conn-status connected'; dot.title = 'Connected'; }
   toast(`Connected to ${alias}`, 'success');
 

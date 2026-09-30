@@ -1,4 +1,6 @@
-import { $ } from '../utils/state.js';
+import { $, state } from '../utils/state.js';
+import { icon } from '../utils/icons.js';
+import { closestTarget, queryAllHtml } from '../utils/dom.js';
 
 export function initEditorShell() {
   const container = $('#db-editor-view-container');
@@ -42,8 +44,6 @@ export function initEditorShell() {
         <!-- Main Workspace -->
         <div class="editor-main">
 
-
-
           <div id="editor-result-container">
             <!-- Collections View Content -->
             <div id="editor-view-collections-content">
@@ -86,6 +86,7 @@ export function initEditorShell() {
                     <select class="editor-page-size-select" id="editor-page-size-select">
                       <option value="10" selected>10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option>
                     </select>
+                    <select class="editor-page-size-select" id="editor-query-timeout-select" title="Server time limit per query (maxTimeMS)"></select>
                     <span class="editor-pagination-info" id="editor-pagination-info">Documents 0 to 0</span>
                   </div>
                   <div class="editor-pagination-right">
@@ -94,7 +95,7 @@ export function initEditorShell() {
                     <button class="btn btn-ghost btn-icon btn-sm" id="btn-editor-import" title="Import file → collection"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
                     <button class="btn btn-ghost btn-icon btn-sm" id="btn-editor-export" title="Export results / collection → file"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
                     <button class="btn btn-ghost btn-icon btn-sm" id="btn-editor-search-local" title="Search loaded (Ctrl+F)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
-                    <button class="btn btn-ghost btn-icon btn-sm" id="btn-editor-add-doc" title="Add document"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                    <button class="btn btn-ghost btn-icon btn-sm" id="btn-editor-add-doc" title="Add document">${icon('plus', 14)}</button>
                     <div class="editor-view-dropdown" id="editor-view-dropdown">
                       <button class="btn btn-ghost btn-sm editor-view-dropdown-btn" id="editor-view-dropdown-btn">
                         <span id="editor-current-view-label">Tree View</span>
@@ -206,6 +207,8 @@ export function initEditorShell() {
       </div>
     </div>
   `;
+
+  setEditorView(state.editor.dataView);
 }
 function toggleEditorViewDropdown() {
   const menu = document.getElementById('editor-view-options');
@@ -213,6 +216,7 @@ function toggleEditorViewDropdown() {
 }
 
 function setEditorView(view) {
+  state.editor.dataView = view;
   const menu = document.getElementById('editor-view-options');
   if (menu) menu.classList.remove('show');
 
@@ -222,14 +226,13 @@ function setEditorView(view) {
     label.textContent = viewName + ' View';
   }
 
-  document.querySelectorAll('.editor-view-option').forEach(opt => {
+  queryAllHtml('.editor-view-option').forEach(opt => {
     opt.classList.toggle('active', opt.dataset.view === view);
   });
 
-  // Toggle panels
-  document.querySelectorAll('.editor-data-panel').forEach(p => {
+  queryAllHtml('.editor-data-panel').forEach(p => {
     p.classList.add('u-hidden');
-    p.style.display = 'none'; // Ensure both methods are used
+    p.style.display = 'none';
   });
 
   const target = document.getElementById(`editor-data-${view}`);
@@ -237,27 +240,27 @@ function setEditorView(view) {
     target.classList.remove('u-hidden');
     target.style.display = 'block';
   }
+
+  document.dispatchEvent(new CustomEvent('editor-data-view-changed'));
 }
 
-// Global Delegation for Editor Layout
 document.addEventListener('click', (e) => {
-  const dropBtn = e.target.closest('.editor-view-dropdown-btn');
+  const dropBtn = closestTarget(e, '.editor-view-dropdown-btn');
   if (dropBtn) {
     toggleEditorViewDropdown();
     e.stopPropagation();
     return;
   }
 
-  const optBtn = e.target.closest('.editor-view-option');
+  const optBtn = closestTarget(e, '.editor-view-option');
   if (optBtn) {
     const view = optBtn.dataset.view;
     if (view) setEditorView(view);
     return;
   }
 
-  // Close dropdown when clicking outside
   const menu = document.getElementById('editor-view-options');
-  if (menu && menu.classList.contains('show') && !e.target.closest('.editor-view-dropdown')) {
+  if (menu && menu.classList.contains('show') && !closestTarget(e, '.editor-view-dropdown')) {
     menu.classList.remove('show');
   }
 });

@@ -6,9 +6,16 @@
 /** @type {number} MongoDB connection timeout in milliseconds */
 const CONNECTION_TIMEOUT_MS = 10000;
 
+/** @type {number} Default server-side time limit (maxTimeMS) for user queries */
+const QUERY_TIMEOUT_DEFAULT_MS = 60000;
+
+/** @type {number} Longest per-query time limit the UI may request */
+const QUERY_TIMEOUT_MAX_MS = 300000;
+
 /** @type {number} Max time (ms) a single socket op may block before erroring.
- * Guards against idle-dropped sockets (NAT/firewall) that would otherwise hang forever. */
-const SOCKET_TIMEOUT_MS = 60000;
+ * Guards against idle-dropped sockets (NAT/firewall) that would otherwise hang
+ * forever; kept above QUERY_TIMEOUT_MAX_MS so the server's maxTimeMS fires first. */
+const SOCKET_TIMEOUT_MS = QUERY_TIMEOUT_MAX_MS + 15000;
 
 /** @type {number} Retire pooled connections after this idle time (ms) so a fresh
  * socket is opened on next use instead of reusing a dead one. */
@@ -23,9 +30,16 @@ const SHELL_RESULT_LIMIT = 1000;
 /** @type {number} Documents fetched per page for server-paginated shell finds */
 const SHELL_PAGE_SIZE = 10;
 
+/** @type {number} How long a cancelled or timed-out shell script may take to stop
+ * cooperatively before its worker is terminated (synchronous loops never yield). */
+const SHELL_KILL_GRACE_MS = 1000;
+
 module.exports = {
   CONNECTION_TIMEOUT_MS,
+  SHELL_KILL_GRACE_MS,
   SOCKET_TIMEOUT_MS,
+  QUERY_TIMEOUT_DEFAULT_MS,
+  QUERY_TIMEOUT_MAX_MS,
   MAX_IDLE_TIME_MS,
   DEFAULT_QUERY_LIMIT,
   SHELL_RESULT_LIMIT,
